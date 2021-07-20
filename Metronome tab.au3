@@ -7,7 +7,8 @@
 #Include "HJM link Ex.au3"
 #Include "Json.au3"
 
-Local $update_action_items = False
+Global $update_action_items = False
+Global $metronome_user_id = ""
 
 Func Metronome_tab_setup()
 
@@ -46,7 +47,8 @@ Func Metronome_tab_event_handler($msg)
 			GUICtrlStatusInput_SetText($status_input, "")
 
 			; Get user details
-			;Local $json = Metronome_cURL("https://metronomesoftware.com/api/user")
+			Local $json = Metronome_cURL("https://metronomesoftware.com/api/user")
+			$metronome_user_id = Json_Get($json, '.id')
 
 			; Get quarterly priorities
 			GUICtrlStatusInput_SetText($status_input, "Getting your quarterly priorities ...")
@@ -65,7 +67,7 @@ Func Metronome_tab_event_handler($msg)
 
 				Local $id_user = Json_Get($json, '.quarterly_priorities[' & $i & '].id_user')
 
-				if StringCompare($id_user, "ecb3d02c-be28-4415-831b-23c5af9d44ac") = 0 Then
+				if StringCompare($id_user, $metronome_user_id) = 0 Then
 
 					Local $title = Json_Get($json, '.quarterly_priorities[' & $i & '].title')
 					Local $status = Json_Get($json, '.quarterly_priorities[' & $i & '].status')
@@ -157,7 +159,7 @@ Func Metronome_tab_event_handler($msg)
 
 			Local $id_user_owner = Json_Get($json, '.action_items[' & $i & '].id_user_owner')
 
-			if StringCompare($id_user_owner, "ecb3d02c-be28-4415-831b-23c5af9d44ac") = 0 Then
+			if StringCompare($id_user_owner, $metronome_user_id) = 0 Then
 
 				Local $txt = Json_Get($json, '.action_items[' & $i & '].txt')
 				Local $due_date = Json_Get($json, '.action_items[' & $i & '].due_date')
@@ -235,7 +237,7 @@ Func Metronome_cURL($url, $data = "", $json_name_prefix = "")
 		$json = '{"' & $json_name_prefix & '":' & $json & '}'
 	EndIf
 
-	;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 	Local $decoded_json = Json_Decode($json)
 	Return $decoded_json
 
