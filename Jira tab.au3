@@ -22,18 +22,10 @@ EndFunc
 
 Func Jira_tab_event_handler($msg)
 
-	Switch $msg
+;	Switch $msg
 
-		Case $settings_save_button
 
-			depress_button_and_disable_gui($msg, -1, 100)
-			GUICtrlStatusInput_SetText($status_input, "Saving Settings ...")
-			IniWrite($ini_filename, "Global", "HarvestAccountID", GUICtrlRead($harvest_account_id_input))
-			IniWrite($ini_filename, "Global", "HarvestAccessToken", GUICtrlRead($harvest_access_token_input))
-			GUICtrlStatusInput_SetText($status_input, "")
-			raise_button_and_enable_gui($msg)
-
-	EndSwitch
+;	EndSwitch
 
 EndFunc
 

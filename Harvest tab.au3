@@ -65,3 +65,22 @@ Func Harvest_tab_event_handler($msg)
 
 EndFunc
 
+
+Func Harvest_tab_WM_NOTIFY_handler($hWndFrom, $iCode)
+
+;	Switch $hWndFrom
+
+
+;		Case GUICtrlGetHandle($image_compression_quality_slider)
+
+;			Switch $iCode
+;				Case $NM_RELEASEDCAPTURE ; The control is releasing mouse capture
+
+
+;					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $NM_RELEASEDCAPTURE = ' & $NM_RELEASEDCAPTURE & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;			EndSwitch
+
+
+;	EndSwitch
+
+EndFunc

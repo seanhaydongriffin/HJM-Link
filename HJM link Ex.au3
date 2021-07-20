@@ -31,6 +31,7 @@ Global $alphanumeric_arr[36] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
 Global $iStyle = BitOR($TVS_EDITLABELS, $TVS_HASBUTTONS, $TVS_HASLINES, $TVS_LINESATROOT, $TVS_DISABLEDRAGDROP, $TVS_SHOWSELALWAYS, $TVS_CHECKBOXES)
 Global $current_gui
 Global $result = 1
+Global $metronome_token
 
 ; GUIs
 
@@ -51,16 +52,30 @@ Global $tab
 
 ; Settings tab
 
+Global $settings_save_button
 Global $harvest_accound_id_label
 Global $harvest_account_id_input
 Global $harvest_access_token_label
 Global $harvest_access_token_input
-Global $settings_save_button
+Global $metronome_email_input
+Global $metronome_password_input
 
 ; Harvest tab
 
 Global $timesheet_listview
 Global $timesheet_refresh_button
+
+; Jira tab
+
+
+; Metronome tab
+
+Global $metronome_refresh_button
+Global $metronome_periods_listview
+Global $metronome_quarterly_priorities_listview
+Global $metronome_action_items_listview
+Global $metronome_action_items_add_button
+Global $metronome_action_items_delete_button
 
 
 Func HJM_Link_Startup()
@@ -268,7 +283,7 @@ EndFunc   ;==>_DBG_StringSplit2d
 
 Func MainGUICreate(ByRef $tab, $tab_left, $tab_top, $tab_width, $tab_height, $tab_resizing)
 
-	Local $gui = GUICreate($app_name & " - Main GUI", $main_gui_width, $main_gui_height, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_MAXIMIZEBOX, $WS_SIZEBOX, $WS_CAPTION, $WS_POPUP, $WS_SYSMENU))
+	Local $gui = GUICreate($app_name & " - Main", $main_gui_width, $main_gui_height, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_MAXIMIZEBOX, $WS_SIZEBOX, $WS_CAPTION, $WS_POPUP, $WS_SYSMENU))
 	$tab = GUICtrlCreateTabEx($tab_left, $tab_top, $tab_width, $tab_height, $tab_resizing)
 	$current_gui = $gui
 
@@ -405,6 +420,32 @@ Func GUICtrlCreateInputWithLabel($input_text, $input_left, $input_top, $input_wi
 	EndIf
 
 	local $input = GUICtrlCreateInput($input_text, $input_left, $input_top, $input_width, $input_height)
+	GUICtrlSetResizing(-1, $GUI_DOCKALL)
+
+	if StringLen($label2_text) > 0 Then
+
+		GUICtrlCreateLabel($label2_text, $label2_left, $label2_top, $label2_width, $label2_height)
+		GUICtrlSetResizing(-1, $GUI_DOCKALL)
+	EndIf
+
+	Return $input
+
+EndFunc
+
+Func GUICtrlCreatePasswordWithLabel($input_text, $input_left, $input_top, $input_width, $input_height, ByRef $label, $label_text, $label_left, $label_top, $label_width, $label_height, $label_tooltip_text = "", $label2_text = "", $label2_left = -1, $label2_top = -1, $label2_width = -1, $label2_height = -1)
+
+	if StringLen($label_text) > 0 Then
+
+		$label = GUICtrlCreateLabel($label_text, $label_left, $label_top, $label_width, $label_height)
+		GUICtrlSetResizing(-1, $GUI_DOCKALL)
+
+		if StringLen($label_tooltip_text) > 0 Then
+
+			_GUIToolTip_AddTool($tooltip, 0, $label_tooltip_text, GUICtrlGetHandle($label))
+		EndIf
+	EndIf
+
+	local $input = GUICtrlCreateInput($input_text, $input_left, $input_top, $input_width, $input_height, BitOR($ES_LEFT, $ES_AUTOHSCROLL, $ES_PASSWORD))
 	GUICtrlSetResizing(-1, $GUI_DOCKALL)
 
 	if StringLen($label2_text) > 0 Then
