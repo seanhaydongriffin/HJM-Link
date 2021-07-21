@@ -32,6 +32,7 @@ Global $iStyle = BitOR($TVS_EDITLABELS, $TVS_HASBUTTONS, $TVS_HASLINES, $TVS_LIN
 Global $current_gui
 Global $result = 1
 Global $metronome_token
+Global $timesheet_project_assignments_dict = ObjCreate("Scripting.Dictionary")
 
 ; GUIs
 
@@ -64,6 +65,17 @@ Global $metronome_password_input
 
 Global $timesheet_listview
 Global $timesheet_refresh_button
+Global $timesheet_add_button
+Global $timesheet_delete_button
+
+Global $add_time_entry_gui
+Global $add_time_entry_project_listview
+Global $add_time_entry_task_listview
+Global $add_time_entry_add_button
+Global $add_time_entry_cancel_button
+
+
+
 
 ; Jira tab
 

@@ -35,12 +35,17 @@ Harvest_tab_setup()
 Jira_tab_setup()
 Metronome_tab_setup()
 
+; Child guis
+
+Harvest_tab_child_gui_setup()
+
 
 $current_gui = $main_gui
 GUISetState(@SW_SHOW, $main_gui)
 GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
 GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
 _TipDisplayLen(30000)
+_GUICtrlTab_SetCurFocus($tab, Number(IniRead($ini_filename, "Global", "Tab", 1)))
 
 
 While True
@@ -88,18 +93,29 @@ Func WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
 
 	; Global WM_NOTIFY handler ...
 
-;	Switch $hWndFrom
+	Switch $hWndFrom
 
-;		Case GUICtrlGetHandle($tab)
+		Case GUICtrlGetHandle($tab)
 
-;			Switch $iCode
+			Switch $iCode
 
-;				Case $NM_CLICK
+				Case $NM_CLICK
 
+;					if _GUICtrlTab_GetCurSel($tab) = 1 Then
 
-;			EndSwitch
+;						GUICtrlSetState($scrape_auto_join_upload_button, $GUI_DEFBUTTON)
+;					EndIf
 
-;	EndSwitch
+;					if _GUICtrlTab_GetCurSel($tab) = 2 Then
+
+;						GUICtrlSetState($scrape_manual_join_upload_button, $GUI_DEFBUTTON)
+;					EndIf
+
+					IniWrite($ini_filename, "Global", "Tab", _GUICtrlTab_GetCurSel($tab))
+
+			EndSwitch
+
+	EndSwitch
 
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_NOTIFY
