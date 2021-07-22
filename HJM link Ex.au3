@@ -71,9 +71,22 @@ Global $timesheet_delete_button
 Global $add_time_entry_gui
 Global $add_time_entry_project_listview
 Global $add_time_entry_task_listview
-Global $add_time_entry_add_button
+Global $add_time_entry_favourites_list
+Global $add_time_entry_favourites_add_button
+Global $add_time_entry_favourites_delete_button
+Global $add_time_entry_half_hour_radio
+Global $add_time_entry_one_hour_radi
+Global $add_time_entry_one_half_hour_radio
+Global $add_time_entry_two_hour_radio
+Global $add_time_entry_two_half_hour_radio
+Global $add_time_entry_three_hour_radio
+Global $add_time_entry_three_half_hour_radio
+Global $add_time_entry_four_hour_radio
+Global $add_time_entry_four_half_hour_radio
+Global $add_time_entry_five_hour_radio
+Global $add_time_entry_save_button
 Global $add_time_entry_cancel_button
-
+Global $add_time_entry_status_input
 
 
 
@@ -594,7 +607,7 @@ Func GUICtrlCreateListViewEx($left, $top, $width, $height, $col_1_name = Null, $
 	if $col_4_name <> Null Then $col_heading_definition = $col_heading_definition & "|" & $col_4_name
 	if $col_5_name <> Null Then $col_heading_definition = $col_heading_definition & "|" & $col_5_name
 
-	local $ctrl = GUICtrlCreateListView($col_heading_definition, $left, $top, $width, $height)
+	local $ctrl = GUICtrlCreateListView($col_heading_definition, $left, $top, $width, $height, BitOR($LVS_REPORT, $LVS_SINGLESEL, $LVS_SHOWSELALWAYS, $LVS_SORTASCENDING))
 
 	if $col_1_width <> Null Then _GUICtrlListView_SetColumnWidth(-1, 0, $col_1_width)
 	if $col_2_width <> Null Then _GUICtrlListView_SetColumnWidth(-1, 1, $col_2_width)

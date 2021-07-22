@@ -47,6 +47,7 @@ GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
 _TipDisplayLen(30000)
 _GUICtrlTab_SetCurFocus($tab, Number(IniRead($ini_filename, "Global", "Tab", 1)))
 
+Harvest_tab_event_handler($timesheet_refresh_button)
 
 While True
 
