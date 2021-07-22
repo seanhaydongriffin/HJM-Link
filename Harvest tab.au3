@@ -36,9 +36,9 @@ Func Harvest_tab_child_gui_setup()
 
 	$add_time_entry_gui = 														ChildGUICreate($app_name & " - Add Time Entry", 640, 640, $main_gui)
 	GUICtrlCreateGroupEx ("Project", 5, 5, 560, 180)
-	$add_time_entry_project_listview = 											GUICtrlCreateListViewEx(10, 25, 550, 150, "Name", 500, "ID", 160)
+	$add_time_entry_project_listview = 											GUICtrlCreateListViewEx(10, 25, 550, 150, "Name", 600, "ID", 160)
 	GUICtrlCreateGroupEx ("Task", 5, 195, 560, 340)
-	$add_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 215, 200, 310, "Name", 500, "ID", 160)
+	$add_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 215, 200, 310, "Name", 200, "ID", 160)
 	$add_time_entry_hour_input = 												GUICtrlCreateInput("", 10, 540, 40, 20)
     $add_time_entry_half_hour_radio =											GUICtrlCreateRadioEx("0.5", 60, 540, 40, 20, False, "half hour")
     $add_time_entry_one_hour_radio =											GUICtrlCreateRadioEx("1.0", 110, 540, 40, 20, True, "one hour")
@@ -218,6 +218,7 @@ Func Harvest_tab_event_handler($msg)
 					for $project_index = 0 to 99
 
 						Local $project_name = Json_Get($decoded_json, '.project_assignments[' & $project_index & '].project.name')
+						Local $project_id = Json_Get($decoded_json, '.project_assignments[' & $project_index & '].project.id')
 
 						if StringLen($project_name) > 0 Then
 
@@ -225,17 +226,19 @@ Func Harvest_tab_event_handler($msg)
 
 							for $task_index = 0 to 99
 
+								Local $task_id = Json_Get($decoded_json, '.project_assignments[' & $project_index & '].task_assignments[' & $task_index & '].task.id')
 								Local $task_name = Json_Get($decoded_json, '.project_assignments[' & $project_index & '].task_assignments[' & $task_index & '].task.name')
 
 								if StringLen($task_name) < 1 Then ExitLoop
 
-								$task_name = $task_name & "|"
+								$task_name = $task_name & "|" & $task_id
 
 								if StringLen($task_names) > 0 Then $task_names = $task_names & @CRLF
 
 								$task_names = $task_names & $task_name
 							Next
 
+							$timesheet_project_id_dict.Add($project_name, $project_id)
 							$timesheet_project_assignments_dict.Add($project_name, $task_names)
 						EndIf
 					Next
@@ -247,6 +250,7 @@ Func Harvest_tab_event_handler($msg)
 				For $vKey In $timesheet_project_assignments_dict
 
 					Local $index = _GUICtrlListView_AddItem($add_time_entry_project_listview, $vKey)
+					_GUICtrlListView_AddSubItem($add_time_entry_project_listview, $index, $timesheet_project_id_dict.Item($vKey), 1)
 				Next
 
 				_GUICtrlListView_EndUpdate($add_time_entry_project_listview)
@@ -257,6 +261,31 @@ Func Harvest_tab_event_handler($msg)
 			EndIf
 
 		Case $add_time_entry_save_button
+
+			Local $group_info = _GUICtrlListView_GetGroupInfo($timesheet_listview, _GUICtrlListView_GetItemGroupID($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))))
+			Local $time_entry_date = $group_info[0]
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $time_entry_date = ' & $time_entry_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+			Local $time_entry_date_part = StringSplit($group_info[0], " ", 3)
+			$time_entry_date_part[2] = _ConvertMonth($time_entry_date_part[2])
+			Local $selected_project_name = _GUICtrlListView_GetItemText($add_time_entry_project_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_project_listview)), 0)
+			Local $selected_project_id = _GUICtrlListView_GetItemText($add_time_entry_project_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_project_listview)), 1)
+			Local $selected_task_name = _GUICtrlListView_GetItemText($add_time_entry_task_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_task_listview)), 0)
+			Local $selected_task_id = _GUICtrlListView_GetItemText($add_time_entry_task_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_task_listview)), 1)
+
+			GUICtrlStatusInput_SetText($add_time_entry_status_input, "Please Wait. Saving the time entry ...")
+
+			Local $iPID = Run('curl -k "https://api.harvestapp.com/v2/time_entries?project_id=' & $selected_project_id & '&task_id=' & $selected_task_id & '&spent_date=' & @YEAR & '-' & $time_entry_date_part[2] & '-' & $time_entry_date_part[1] & '&hours=1.0" -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X POST -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+			ProcessWaitClose($iPID)
+			Local $json = StdoutRead($iPID)
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+			Local $decoded_json = Json_Decode($json)
+
+			GUICtrlStatusInput_SetText($add_time_entry_status_input, "")
+
+			_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_project_name, 0)
+			_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_task_name, 1)
+			_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), "", 2)
+			_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), "1", 3)
 
 			GUISetState(@SW_ENABLE, $main_gui)
 			GUISetState(@SW_HIDE, $current_gui)

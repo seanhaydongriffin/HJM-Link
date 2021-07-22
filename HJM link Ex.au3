@@ -32,6 +32,7 @@ Global $iStyle = BitOR($TVS_EDITLABELS, $TVS_HASBUTTONS, $TVS_HASLINES, $TVS_LIN
 Global $current_gui
 Global $result = 1
 Global $metronome_token
+Global $timesheet_project_id_dict = ObjCreate("Scripting.Dictionary")
 Global $timesheet_project_assignments_dict = ObjCreate("Scripting.Dictionary")
 
 ; GUIs
@@ -751,4 +752,20 @@ EndFunc   ;==>_GUILock
 
 Func _ColorFlip($iColor)
     Return BitAND(BitShift($iColor, -16) + BitAND($iColor, 0xFF00) + BitShift($iColor, 16), 0xFFFFFF)
+EndFunc
+
+Func _ConvertMonth($date)
+   $date = StringReplace($date, 'Jan', '01')
+   $date = StringReplace($date, 'Feb', '02')
+   $date = StringReplace($date, 'Mar', '03')
+   $date = StringReplace($date, 'Apr', '04')
+   $date = StringReplace($date, 'May', '05')
+   $date = StringReplace($date, 'Jun', '06')
+   $date = StringReplace($date, 'Jul', '07')
+   $date = StringReplace($date, 'Aug', '08')
+   $date = StringReplace($date, 'Sep', '09')
+   $date = StringReplace($date, 'Oct', '10')
+   $date = StringReplace($date, 'Nov', '11')
+   $date = StringReplace($date, 'Dec', '12')
+   Return $date
 EndFunc
