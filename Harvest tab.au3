@@ -9,7 +9,8 @@
 #include <Date.au3>
 
 Global $update_tasks = False
-Global $favourites_path = $app_data_dir & "\favourites.txt"
+Global $project_filters_path = $app_data_dir & "\project filters.txt"
+Global $task_filters_path = $app_data_dir & "\task filters.txt"
 Global $project_assignments_loaded = False
 
 Func Harvest_tab_setup()
@@ -35,10 +36,14 @@ EndFunc
 Func Harvest_tab_child_gui_setup()
 
 	$add_time_entry_gui = 														ChildGUICreate($app_name & " - Add Time Entry", 640, 640, $main_gui)
-	GUICtrlCreateGroupEx ("Project", 5, 5, 560, 180)
-	$add_time_entry_project_listview = 											GUICtrlCreateListViewEx(10, 25, 550, 150, "Name", 600, "ID", 160)
-	GUICtrlCreateGroupEx ("Task", 5, 195, 560, 340)
-	$add_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 215, 200, 310, "Name", 200, "ID", 160)
+	GUICtrlCreateGroupEx ("Project", 5, 5, 630, 180)
+	$add_time_entry_project_listview = 											GUICtrlCreateListViewEx(10, 25, 400, 155, "Name", 600, "ID", 160)
+	GUICtrlCreateGroupEx ("Filters", 420, 20, 200, 165)
+	$add_time_entry_project_filters_list = 										GUICtrlCreateList("", 425, 40, 180, 90, BitOR($GUI_SS_DEFAULT_LIST, $WS_HSCROLL))
+	$add_time_entry_project_filters_add_button = 								GUICtrlCreateImageButton("add.ico", 425, 140, 36, "Add a new Project Filter")
+	$add_time_entry_project_filters_delete_button = 							GUICtrlCreateImageButton("delete.ico", 465, 140, 36, "Delete the selected Project Filter")
+	GUICtrlCreateGroupEx ("Task", 5, 195, 630, 340)
+	$add_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 215, 400, 310, "Name", 200, "ID", 160)
 	$add_time_entry_hour_input = 												GUICtrlCreateInput("", 10, 540, 40, 20)
     $add_time_entry_half_hour_radio =											GUICtrlCreateRadioEx("0.5", 60, 540, 40, 20, False, "half hour")
     $add_time_entry_one_hour_radio =											GUICtrlCreateRadioEx("1.0", 110, 540, 40, 20, True, "one hour")
@@ -52,10 +57,10 @@ Func Harvest_tab_child_gui_setup()
     $add_time_entry_five_hour_radio =											GUICtrlCreateRadioEx("5.0", 510, 540, 40, 20, False, "five hour")
 	$add_time_entry_save_button = 												GUICtrlCreateImageButton("save.ico", 10, 640 - 70, 36, "Save this new Time Entry")
 	;$add_time_entry_cancel_button = 											GUICtrlCreateImageButton("cancel.ico", 50, 640 - 70, 36, "Cancel this Time Entry")
-	GUICtrlCreateGroupEx ("Favourites", 240, 210, 200, 240)
-	$add_time_entry_favourites_list = 											GUICtrlCreateList("", 250, 230, 180, 170, BitOR($GUI_SS_DEFAULT_LIST, $WS_HSCROLL))
-	$add_time_entry_favourites_add_button = 									GUICtrlCreateImageButton("add.ico", 250, 410, 36, "Add a new Favourite Task")
-	$add_time_entry_favourites_delete_button = 									GUICtrlCreateImageButton("delete.ico", 290, 410, 36, "Delete the selected Favourite Task")
+	GUICtrlCreateGroupEx ("Filters", 420, 210, 200, 240)
+	$add_time_entry_task_filters_list = 											GUICtrlCreateList("", 425, 230, 180, 170, BitOR($GUI_SS_DEFAULT_LIST, $WS_HSCROLL))
+	$add_time_entry_task_filters_add_button = 									GUICtrlCreateImageButton("add.ico", 425, 410, 36, "Add a new Favourite Task")
+	$add_time_entry_task_filters_delete_button = 									GUICtrlCreateImageButton("delete.ico", 465, 410, 36, "Delete the selected Favourite Task")
 	$add_time_entry_status_input = 												GUICtrlCreateStatusInput("", 10, 640 - 25, 640 - 20, 20)
 ;	GUICtrlCreateGroupEx  ("----> PC", 200, 5, 180, 40)
 ;	$boot_config_open_button = 													GUICtrlCreateButton("Open", 205, 20, 80, 20)
@@ -181,7 +186,8 @@ Func Harvest_tab_event_handler($msg)
 			GUISetState(@SW_DISABLE, $main_gui)
 			GUISetState(@SW_SHOW, $add_time_entry_gui)
 			$current_gui = $add_time_entry_gui
-			GUICtrlListBoxFromFile($add_time_entry_favourites_list, $favourites_path)
+			GUICtrlListBoxFromFile($add_time_entry_project_filters_list, $project_filters_path)
+			GUICtrlListBoxFromFile($add_time_entry_task_filters_list, $task_filters_path)
 			GUICtrlSetState($add_time_entry_save_button, $GUI_DEFBUTTON)
 
 			if $project_assignments_loaded = False Then
@@ -256,6 +262,9 @@ Func Harvest_tab_event_handler($msg)
 				_GUICtrlListView_EndUpdate($add_time_entry_project_listview)
 				_GUICtrlListView_SetItemSelected($add_time_entry_project_listview, 0, true, true)
 				GUICtrlSetState($add_time_entry_project_listview, $GUI_FOCUS)
+
+				FilterProject()
+
 				$project_assignments_loaded = True
 				$update_tasks = True
 			EndIf
@@ -292,28 +301,51 @@ Func Harvest_tab_event_handler($msg)
 			$current_gui = $main_gui
 			raise_button_and_enable_gui($timesheet_add_button)
 
-		Case $add_time_entry_favourites_add_button
+		Case $add_time_entry_project_filters_add_button
+
+			depress_button_and_disable_gui($msg, $current_gui)
+			$result = InputBox($app_name, "Enter text for filtering project names", "", "", 240, 140, Default, Default, 0, $main_gui)
+
+			if StringLen($result) > 0 Then
+
+				_GUICtrlListBox_AddString($add_time_entry_project_filters_list, $result)
+			EndIf
+			raise_button_and_enable_gui($msg, $current_gui)
+
+			GUICtrlListBoxToFile($add_time_entry_project_filters_list, $project_filters_path)
+			FilterProject()
+
+		Case $add_time_entry_project_filters_delete_button
+
+			depress_button_and_disable_gui($msg, $current_gui, 100)
+			_GUICtrlListBox_DeleteString($add_time_entry_project_filters_list, _GUICtrlListBox_GetCurSel($add_time_entry_project_filters_list))
+			raise_button_and_enable_gui($msg, $current_gui)
+
+			GUICtrlListBoxToFile($add_time_entry_project_filters_list, $project_filters_path)
+			FilterProject()
+
+		Case $add_time_entry_task_filters_add_button
 
 			depress_button_and_disable_gui($msg, $current_gui)
 			$result = InputBox($app_name, "Enter a favourite task name", "", "", 240, 140, Default, Default, 0, $main_gui)
 
 			if StringLen($result) > 0 Then
 
-				_GUICtrlListBox_AddString($add_time_entry_favourites_list, $result)
+				_GUICtrlListBox_AddString($add_time_entry_task_filters_list, $result)
 			EndIf
 			raise_button_and_enable_gui($msg, $current_gui)
 
-			GUICtrlListBoxToFile($add_time_entry_favourites_list, $favourites_path)
-			SelectFavouriteTask()
+			GUICtrlListBoxToFile($add_time_entry_task_filters_list, $task_filters_path)
+			$update_tasks = True
 
-		Case $add_time_entry_favourites_delete_button
+		Case $add_time_entry_task_filters_delete_button
 
 			depress_button_and_disable_gui($msg, $current_gui, 100)
-			_GUICtrlListBox_DeleteString($add_time_entry_favourites_list, _GUICtrlListBox_GetCurSel($add_time_entry_favourites_list))
+			_GUICtrlListBox_DeleteString($add_time_entry_task_filters_list, _GUICtrlListBox_GetCurSel($add_time_entry_task_filters_list))
 			raise_button_and_enable_gui($msg, $current_gui)
 
-			GUICtrlListBoxToFile($add_time_entry_favourites_list, $favourites_path)
-			SelectFavouriteTask()
+			GUICtrlListBoxToFile($add_time_entry_task_filters_list, $task_filters_path)
+			$update_tasks = True
 
 	EndSwitch
 
@@ -340,10 +372,28 @@ Func Harvest_tab_event_handler($msg)
 
 			_GUICtrlListView_BeginUpdate($add_time_entry_task_listview)
 			_GUICtrlListView_AddArray($add_time_entry_task_listview, $task_name_arr)
+
+			; remove any filtered tasks
+
+			for $i = 0 to (_GUICtrlListView_GetItemCount($add_time_entry_task_listview) - 1)
+
+				for $j = 0 to (_GUICtrlListBox_GetCount($add_time_entry_task_filters_list) - 1)
+
+					if StringInStr(_GUICtrlListView_GetItemText($add_time_entry_task_listview, $i), _GUICtrlListBox_GetText($add_time_entry_task_filters_list, $j)) < 1 Then
+
+						_GUICtrlListView_DeleteItem($add_time_entry_task_listview, $i)
+
+						if ($i + 1) > _GUICtrlListView_GetItemCount($add_time_entry_task_listview) Then ExitLoop 2
+						$i = $i - 1
+						ExitLoop
+					EndIf
+				Next
+			Next
+
 			_GUICtrlListView_EndUpdate($add_time_entry_task_listview)
 
 			_GUICtrlListView_SetItemSelected($add_time_entry_task_listview, 0, true, False)
-			SelectFavouriteTask()
+			;FilterTask()
 		EndIf
 
 	EndIf
@@ -407,11 +457,62 @@ Func GUICtrlListBoxFromFile($list, $path)
 	EndIf
 EndFunc
 
-Func SelectFavouriteTask()
+Func FilterProject()
 
-	for $i = 0 to (_GUICtrlListBox_GetCount($add_time_entry_favourites_list) - 1)
+	_GUICtrlListView_DeleteAllItems($add_time_entry_project_listview)
+	_GUICtrlListView_BeginUpdate($add_time_entry_project_listview)
 
-		$result = _GUICtrlListView_FindText($add_time_entry_task_listview, _GUICtrlListBox_GetText($add_time_entry_favourites_list, $i), -1, False)
+	For $vKey In $timesheet_project_assignments_dict
+
+		if _GUICtrlListBox_GetCount($add_time_entry_project_filters_list) = 0 Then
+
+			Local $index = _GUICtrlListView_AddItem($add_time_entry_project_listview, $vKey)
+			_GUICtrlListView_AddSubItem($add_time_entry_project_listview, $index, $timesheet_project_id_dict.Item($vKey), 1)
+		EndIf
+
+		for $i = 0 to (_GUICtrlListBox_GetCount($add_time_entry_project_filters_list) - 1)
+
+			if StringInStr($vKey, _GUICtrlListBox_GetText($add_time_entry_project_filters_list, $i)) > 0 Then
+
+				Local $index = _GUICtrlListView_AddItem($add_time_entry_project_listview, $vKey)
+				_GUICtrlListView_AddSubItem($add_time_entry_project_listview, $index, $timesheet_project_id_dict.Item($vKey), 1)
+				ExitLoop
+			EndIf
+		Next
+	Next
+
+	_GUICtrlListView_EndUpdate($add_time_entry_project_listview)
+	GUICtrlSetState($add_time_entry_project_listview, $GUI_FOCUS)
+
+EndFunc
+
+Func FilterTask()
+
+
+	_GUICtrlListView_DeleteAllItems($add_time_entry_task_listview)
+	_GUICtrlListView_BeginUpdate($add_time_entry_task_listview)
+
+	For $vKey In $timesheet_project_assignments_dict
+
+		for $i = 0 to (_GUICtrlListBox_GetCount($add_time_entry_task_filters_list) - 1)
+
+			if StringInStr($timesheet_project_assignments_dict.Item($vKey), _GUICtrlListBox_GetText($add_time_entry_task_filters_list, $i)) > 0 Then
+
+				Local $index = _GUICtrlListView_AddItem($add_time_entry_task_listview, $vKey)
+				_GUICtrlListView_AddSubItem($add_time_entry_task_listview, $index, $timesheet_project_id_dict.Item($vKey), 1)
+				ExitLoop
+			EndIf
+		Next
+	Next
+
+	_GUICtrlListView_EndUpdate($add_time_entry_task_listview)
+	GUICtrlSetState($add_time_entry_task_listview, $GUI_FOCUS)
+
+
+
+	for $i = 0 to (_GUICtrlListBox_GetCount($add_time_entry_task_filters_list) - 1)
+
+		$result = _GUICtrlListView_FindText($add_time_entry_task_listview, _GUICtrlListBox_GetText($add_time_entry_task_filters_list, $i), -1, False)
 
 		if $result > -1 Then
 

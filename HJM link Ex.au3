@@ -71,10 +71,13 @@ Global $timesheet_delete_button
 
 Global $add_time_entry_gui
 Global $add_time_entry_project_listview
+Global $add_time_entry_project_filters_list
+Global $add_time_entry_project_filters_add_button
+Global $add_time_entry_project_filters_delete_button
 Global $add_time_entry_task_listview
-Global $add_time_entry_favourites_list
-Global $add_time_entry_favourites_add_button
-Global $add_time_entry_favourites_delete_button
+Global $add_time_entry_task_filters_list
+Global $add_time_entry_task_filters_add_button
+Global $add_time_entry_task_filters_delete_button
 Global $add_time_entry_half_hour_radio
 Global $add_time_entry_one_hour_radi
 Global $add_time_entry_one_half_hour_radio
