@@ -130,7 +130,7 @@ Func WM_COMMAND($hWnd, $iMsg, $wParam, $lParam)
 
 	; TAB specific WM_COMMAND handlers ...
 
-;	Scrape_Images_with_Auto_Join_tab_WM_COMMAND_handler($hWndFrom, $iCode)
+	Harvest_tab_WM_COMMAND_handler($hWndFrom, $iCode)
 ;	Scrape_Metadata_tab_WM_COMMAND_handler($hWndFrom, $iCode)
 ;	Scrape_Images_with_Manual_Join_tab_WM_COMMAND_handler($hWndFrom, $iCode)
 

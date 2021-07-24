@@ -13,6 +13,7 @@
 #Include <WinAPIEx.au3>
 #Include <GUIConstantsEx.au3>
 #Include <GUIMenu.au3>
+#include <GuiButton.au3>
 
 
 ; #GLOBAL VARIABLES# =================================================================================================
@@ -64,22 +65,28 @@ Global $metronome_password_input
 
 ; Harvest tab
 
+Global $timesheet_week_total_label
 Global $timesheet_listview
 Global $timesheet_refresh_button
 Global $timesheet_add_button
 Global $timesheet_delete_button
+Global $timesheet_tmp_button
 
 Global $add_time_entry_gui
 Global $add_time_entry_project_listview
 Global $add_time_entry_project_filters_list
 Global $add_time_entry_project_filters_add_button
 Global $add_time_entry_project_filters_delete_button
+Global $add_time_entry_project_filters_enable_checkbox
 Global $add_time_entry_task_listview
 Global $add_time_entry_task_filters_list
 Global $add_time_entry_task_filters_add_button
 Global $add_time_entry_task_filters_delete_button
+Global $add_time_entry_task_filters_enable_checkbox
+Global $add_time_entry_hour_input_radio
+Global $add_time_entry_hour_input
 Global $add_time_entry_half_hour_radio
-Global $add_time_entry_one_hour_radi
+Global $add_time_entry_one_hour_radio
 Global $add_time_entry_one_half_hour_radio
 Global $add_time_entry_two_hour_radio
 Global $add_time_entry_two_half_hour_radio
@@ -771,4 +778,23 @@ Func _ConvertMonth($date)
    $date = StringReplace($date, 'Nov', '11')
    $date = StringReplace($date, 'Dec', '12')
    Return $date
+EndFunc
+
+Func GUICtrlListView_GetTopMostIndex($listview)
+
+	Local $top_most_item_y_pos = 9999
+	Local $top_most_item_index = 0
+
+	for $i = 0 to (_GUICtrlListView_GetItemCount($listview) - 1)
+
+		Local $y_pos = _GUICtrlListView_GetItemPositionY($timesheet_listview, $i)
+
+		if $y_pos < $top_most_item_y_pos then
+
+			$top_most_item_y_pos = $y_pos
+			$top_most_item_index = $i
+		EndIf
+	Next
+
+	return $top_most_item_index
 EndFunc
