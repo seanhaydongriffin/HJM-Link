@@ -18,8 +18,33 @@ Func Harvest_tab_setup()
 
 	GUICtrlCreateTabItemEx("Harvest")
 	;GUICtrlCreateGroupEx  ("", 20, 140, 250, 500)
-	$timesheet_week_total_label = 												GUICtrlCreateLabel("Week Total : 0 hrs", 30, 210, 400, 20)
-	$timesheet_listview = 														GUICtrlCreateListViewEx(30, 230, 760, 360, "Project", 240, "Task", 160, "Notes", 260, "Hours", 50, "ID", 160)
+	$timesheet_week_total_label = 												GUICtrlCreateLabel("Week Starting", 40, 110, 120, 20)
+	$timesheet_week_combo = 													GUICtrlCreateComboEx(130, 105, 100, 20)
+
+
+	$startjuldate = _DateToDayValue(@YEAR - 1,1,1)
+	$endjuldate = _DateToDayValue(@YEAR,12,31)
+	Global $iYear, $iMonth, $iDay
+
+	For $x =  $startjuldate To $endjuldate
+		_DayValueToDate ( $x, $iYear,$iMonth, $iDay )
+		if _DateToDayOfWeek($iYear,$iMonth,$iDay) = 2 Then
+
+			_GUICtrlComboBox_AddString($timesheet_week_combo, $iDay & "/" & $iMonth & "/" & $iYear)
+		EndIf
+	Next
+
+	_GUICtrlComboBox_SelectString($timesheet_week_combo, GetLastMondayDate("dd/MM/yyyy"))
+
+	$timesheet_this_week_button = 												GUICtrlCreateImageButton("week.ico", 250, 90, 36, "View this week", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$timesheet_refresh_button = 												GUICtrlCreateImageButton("refresh.ico", 290, 90, 36, "Get your Harvest times", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$timesheet_add_button = 													GUICtrlCreateImageButton("add.ico", 330, 90, 36, "Add a new Time Entry")
+	$timesheet_delete_button = 													GUICtrlCreateImageButton("delete.ico", 370, 90, 36, "Delete the selected Time Entry")
+	$timesheet_week_total_label = 												GUICtrlCreateLabel("Week Total : 0 hrs", 635, 110, 400, 20)
+
+
+
+	$timesheet_listview = 														GUICtrlCreateListViewEx(30, 130, 760, 500, "Project", 240, "Task", 160, "Notes", 260, "Hours", 100, "ID", 160)
 	_GUICtrlListView_EnableGroupView($timesheet_listview)
 	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 1, "Monday")
 	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 2, "Tuesday")
@@ -28,9 +53,6 @@ Func Harvest_tab_setup()
 	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 5, "Friday")
 	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 6, "Saturday")
 	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 7, "Sunday")
-	$timesheet_refresh_button = 												GUICtrlCreateImageButton("refresh.ico", 30, 80, 36, "Get your Harvest times", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-	$timesheet_add_button = 													GUICtrlCreateImageButton("add.ico", 70, 80, 36, "Add a new Time Entry")
-	$timesheet_delete_button = 													GUICtrlCreateImageButton("delete.ico", 110, 80, 36, "Delete the selected Time Entry")
 ;	$timesheet_edit_button = 													GUICtrlCreateImageButton("edit.ico", 150, 80, 36, "Edit the selected Time Entry")
 ;	$timesheet_tmp_button = 													GUICtrlCreateImageButton("edit.ico", 190, 80, 36, "Edit the selected Time Entry")
 
@@ -104,98 +126,8 @@ Func Harvest_tab_event_handler($msg)
 
 		case $timesheet_refresh_button
 
-			depress_button_and_disable_gui($msg, -1, 100)
-
-			Local $days_from_today
-			Local $last_monday_date
-			Local $date_part
-
-			for $days_from_today = 0 to -7 step -1
-
-				$last_monday_date = _DateAdd('d', $days_from_today, _NowCalcDate())
-				$date_part = StringSplit($last_monday_date, "/", 3)
-				Local $spent_date_day_to_week_index = _DateToDayOfWeek($date_part[0], $date_part[1], $date_part[2])
-
-				if $spent_date_day_to_week_index = 2 Then ExitLoop
-			Next
-
-			Local $this_sunday_date = _DateAdd('d', 6, $last_monday_date)
-
-			GUICtrlStatusInput_SetText($status_input, "Please Wait. Getting your Harvest times ...")
-			Local $iPID = Run('curl -k https://api.harvestapp.com/v2/time_entries?from=' & StringReplace($last_monday_date, "/", "-") & '&to=' & StringReplace($this_sunday_date, "/", "-") & ' -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $this_sunday_date = ' & $this_sunday_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $last_monday_date = ' & $last_monday_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-			;Local $iPID = Run('curl -k https://api.harvestapp.com/v2/time_entries?from=2021-07-19&to=2021-07-25 -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-			ProcessWaitClose($iPID)
-			Local $json = StdoutRead($iPID)
-;			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-			GUICtrlStatusInput_SetText($status_input, "")
-
-			Local $decoded_json = Json_Decode($json)
-			_GUICtrlListView_DeleteAllItems($timesheet_listview)
-			_GUICtrlListView_BeginUpdate($timesheet_listview)
-			Local $times_exist_for_day[7] = [False, False, False, False, False, False, False]
-			Local $hours_day_of_week[7] = [0, 0, 0, 0, 0, 0, 0]
-
-			for $i = 99 to 0 step -1
-
-				Local $spent_date = Json_Get($decoded_json, '.time_entries[' & $i & '].spent_date')
-
-				if StringLen($spent_date) > 0 Then
-
-					Local $spent_date_day_to_week_index = _DateToDayOfWeek(StringLeft($spent_date, 4), StringMid($spent_date, 6, 2), StringRight($spent_date, 2))
-					$spent_date = _DateDayOfWeek($spent_date_day_to_week_index)
-					Local $project = Json_Get($decoded_json, '.time_entries[' & $i & '].project.name')
-					Local $task = Json_Get($decoded_json, '.time_entries[' & $i & '].task.name')
-					Local $notes = Json_Get($decoded_json, '.time_entries[' & $i & '].notes')
-					Local $hours = Json_Get($decoded_json, '.time_entries[' & $i & '].hours')
-					Local $id = Json_Get($decoded_json, '.time_entries[' & $i & '].id')
-
-					Local $index = _GUICtrlListView_AddItem($timesheet_listview, $project)
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $project = ' & $project & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-					_GUICtrlListView_AddSubItem($timesheet_listview, $index, $task, 1)
-					_GUICtrlListView_AddSubItem($timesheet_listview, $index, $notes, 2)
-					_GUICtrlListView_AddSubItem($timesheet_listview, $index, $hours, 3)
-					_GUICtrlListView_AddSubItem($timesheet_listview, $index, $id, 4)
-					_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, $spent_date_day_to_week_index - 1)
-					$times_exist_for_day[$spent_date_day_to_week_index - 2] = True
-					$hours_day_of_week[$spent_date_day_to_week_index - 2] = $hours_day_of_week[$spent_date_day_to_week_index - 2] + $hours
-				EndIf
-			Next
-
-			for $i = 0 to (UBound($times_exist_for_day) - 1)
-
-				if $times_exist_for_day[$i] = False Then
-
-					Local $index = _GUICtrlListView_AddItem($timesheet_listview, "<click here then add button above>")
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : "<click here then add button above>" = ' & "<click here then add button above>" & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-					_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 1)
-					_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 2)
-					_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 3)
-					_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 4)
-					_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, $i + 1)
-				EndIf
-			Next
-
-			_GUICtrlListView_SetGroupInfo($timesheet_listview, 1, "Monday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[0] & " hrs)")
-			$date_part = StringSplit(_DateAdd('d', $days_from_today + 1, _NowCalcDate()), "/", 3)
-			_GUICtrlListView_SetGroupInfo($timesheet_listview, 2, "Tuesday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[1] & " hrs)")
-			$date_part = StringSplit(_DateAdd('d', $days_from_today + 2, _NowCalcDate()), "/", 3)
-			_GUICtrlListView_SetGroupInfo($timesheet_listview, 3, "Wednesday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[2] & " hrs)")
-			$date_part = StringSplit(_DateAdd('d', $days_from_today + 3, _NowCalcDate()), "/", 3)
-			_GUICtrlListView_SetGroupInfo($timesheet_listview, 4, "Thursday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[3] & " hrs)")
-			$date_part = StringSplit(_DateAdd('d', $days_from_today + 4, _NowCalcDate()), "/", 3)
-			_GUICtrlListView_SetGroupInfo($timesheet_listview, 5, "Friday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[4] & " hrs)")
-			$date_part = StringSplit(_DateAdd('d', $days_from_today + 5, _NowCalcDate()), "/", 3)
-			_GUICtrlListView_SetGroupInfo($timesheet_listview, 6, "Saturday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[5] & " hrs)")
-			$date_part = StringSplit(_DateAdd('d', $days_from_today + 6, _NowCalcDate()), "/", 3)
-			_GUICtrlListView_SetGroupInfo($timesheet_listview, 7, "Sunday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[6] & " hrs)")
-
-			GUICtrlSetData($timesheet_week_total_label, "Week Total : " & ($hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6]) & " hrs")
-
-			_GUICtrlListView_EndUpdate($timesheet_listview)
+			depress_button_and_disable_gui($msg) ;, -1, 100)
+			RefreshTimesheet(GetLastMondayDate())
 			raise_button_and_enable_gui($msg)
 			_GUICtrlListView_SetItemSelected($timesheet_listview, GUICtrlListView_GetTopMostIndex($timesheet_listview), true, true)
 			GUICtrlSetState($timesheet_listview, $GUI_FOCUS)
@@ -309,6 +241,16 @@ Func Harvest_tab_event_handler($msg)
 ;			$yy = GUICtrlListView_GetTopMostIndex($timesheet_listview)
 
 ;			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $yy = ' & $yy & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+
+		Case $timesheet_this_week_button
+
+			_GUICtrlComboBox_SelectString($timesheet_week_combo, GetLastMondayDate("dd/MM/yyyy"))
+
+			depress_button_and_disable_gui($msg, -1, 100)
+			RefreshTimesheet(GetLastMondayDate())
+			raise_button_and_enable_gui($msg)
+			_GUICtrlListView_SetItemSelected($timesheet_listview, GUICtrlListView_GetTopMostIndex($timesheet_listview), true, true)
+			GUICtrlSetState($timesheet_listview, $GUI_FOCUS)
 
 
 		Case $add_time_entry_save_button
@@ -514,6 +456,27 @@ Func Harvest_tab_WM_COMMAND_handler($hWndFrom, $iCode)
 
 
     Switch $hWndFrom
+
+		Case GUICtrlGetHandle($timesheet_week_combo)
+
+			Switch $iCode
+
+                Case $CBN_SELENDOK ; Sent when the user cancels the selection in a list box
+
+					_GUICtrlComboBox_ShowDropDown($timesheet_week_combo, False)
+					Local $week_starting_date = GUICtrlRead($timesheet_week_combo)
+					$week_starting_date = _Date_Time_Convert($week_starting_date, "dd/MM/yyyy", "yyyy/MM/dd")
+					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $week_starting_date = ' & $week_starting_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+
+;					depress_button_and_disable_gui($msg, -1, 100)
+					RefreshTimesheet($week_starting_date)
+;					raise_button_and_enable_gui($msg)
+					_GUICtrlListView_SetItemSelected($timesheet_listview, GUICtrlListView_GetTopMostIndex($timesheet_listview), true, true)
+					GUICtrlSetState($timesheet_listview, $GUI_FOCUS)
+
+			EndSwitch
+
+
 
 
         Case GUICtrlGetHandle($add_time_entry_project_filters_enable_checkbox)
@@ -763,5 +726,90 @@ Func UpdateTotalHours()
 	Next
 
 	GUICtrlSetData($timesheet_week_total_label, "Week Total : " & $week_total_hours & " hrs")
+
+EndFunc
+
+Func RefreshTimesheet($week_start_date)
+
+
+	_GUICtrlListView_DeleteAllItems($timesheet_listview)
+	Local $this_sunday_date = _DateAdd('d', 6, $week_start_date)
+
+
+	GUICtrlStatusInput_SetText($status_input, "Please Wait. Getting your Harvest times ...")
+	Local $iPID = Run('curl -k https://api.harvestapp.com/v2/time_entries?from=' & StringReplace($week_start_date, "/", "-") & '&to=' & StringReplace($this_sunday_date, "/", "-") & ' -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $this_sunday_date = ' & $this_sunday_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $week_start_date = ' & $week_start_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ProcessWaitClose($iPID)
+	Local $json = StdoutRead($iPID)
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	GUICtrlStatusInput_SetText($status_input, "")
+
+	Local $decoded_json = Json_Decode($json)
+	_GUICtrlListView_BeginUpdate($timesheet_listview)
+	Local $times_exist_for_day[7] = [False, False, False, False, False, False, False]
+	Local $hours_day_of_week[7] = [0, 0, 0, 0, 0, 0, 0]
+
+	for $i = 99 to 0 step -1
+
+		Local $spent_date = Json_Get($decoded_json, '.time_entries[' & $i & '].spent_date')
+
+		if StringLen($spent_date) > 0 Then
+
+			Local $spent_date_day_to_week_index = _DateToDayOfWeek(StringLeft($spent_date, 4), StringMid($spent_date, 6, 2), StringRight($spent_date, 2))
+			$spent_date = _DateDayOfWeek($spent_date_day_to_week_index)
+			Local $project = Json_Get($decoded_json, '.time_entries[' & $i & '].project.name')
+			Local $task = Json_Get($decoded_json, '.time_entries[' & $i & '].task.name')
+			Local $notes = Json_Get($decoded_json, '.time_entries[' & $i & '].notes')
+			Local $hours = Json_Get($decoded_json, '.time_entries[' & $i & '].hours')
+			Local $id = Json_Get($decoded_json, '.time_entries[' & $i & '].id')
+
+			Local $index = _GUICtrlListView_AddItem($timesheet_listview, $project)
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $project = ' & $project & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $task, 1)
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $notes, 2)
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $hours, 3)
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $id, 4)
+			_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, $spent_date_day_to_week_index - 1)
+			$times_exist_for_day[$spent_date_day_to_week_index - 2] = True
+			$hours_day_of_week[$spent_date_day_to_week_index - 2] = $hours_day_of_week[$spent_date_day_to_week_index - 2] + $hours
+		EndIf
+	Next
+
+	for $i = 0 to (UBound($times_exist_for_day) - 1)
+
+		if $times_exist_for_day[$i] = False Then
+
+			Local $index = _GUICtrlListView_AddItem($timesheet_listview, "<click here then add button above>")
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : "<click here then add button above>" = ' & "<click here then add button above>" & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 1)
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 2)
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 3)
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 4)
+			_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, $i + 1)
+		EndIf
+	Next
+
+	$date_part = StringSplit(_DateAdd('d', 0, $week_start_date), "/", 3)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 1, "Monday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[0] & " hrs)")
+	$date_part = StringSplit(_DateAdd('d', 1, $week_start_date), "/", 3)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 2, "Tuesday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[1] & " hrs)")
+	$date_part = StringSplit(_DateAdd('d', 2, $week_start_date), "/", 3)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 3, "Wednesday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[2] & " hrs)")
+	$date_part = StringSplit(_DateAdd('d', 3, $week_start_date), "/", 3)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 4, "Thursday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[3] & " hrs)")
+	$date_part = StringSplit(_DateAdd('d', 4, $week_start_date), "/", 3)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 5, "Friday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[4] & " hrs)")
+	$date_part = StringSplit(_DateAdd('d', 5, $week_start_date), "/", 3)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 6, "Saturday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[5] & " hrs)")
+	$date_part = StringSplit(_DateAdd('d', 6, $week_start_date), "/", 3)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 7, "Sunday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[6] & " hrs)")
+
+	GUICtrlSetData($timesheet_week_total_label, "Week Total : " & ($hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6]) & " hrs")
+
+	_GUICtrlListView_EndUpdate($timesheet_listview)
+
 
 EndFunc

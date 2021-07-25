@@ -11,15 +11,8 @@
 #Include "Jira tab.au3"
 #Include "Metronome tab.au3"
 
-;$LVN_ITEMACTIVATE
-;$LVN_ITEMCHANGED
-;$LVN_ITEMCHANGING
-;$NM_CLICK
-;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $NM_CLICK = ' & $NM_CLICK & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $LVN_ITEMCHANGING = ' & $LVN_ITEMCHANGING & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $LVN_ITEMCHANGED = ' & $LVN_ITEMCHANGED & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $LVN_ITEMACTIVATE = ' & $LVN_ITEMACTIVATE & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-;Exit
+
+
 
 HJM_Link_Startup()
 

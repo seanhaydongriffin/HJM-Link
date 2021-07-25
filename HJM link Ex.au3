@@ -14,6 +14,8 @@
 #Include <GUIConstantsEx.au3>
 #Include <GUIMenu.au3>
 #include <GuiButton.au3>
+#include <Date.au3>
+#include "DTC.au3"
 
 
 ; #GLOBAL VARIABLES# =================================================================================================
@@ -71,6 +73,8 @@ Global $timesheet_refresh_button
 Global $timesheet_add_button
 Global $timesheet_delete_button
 Global $timesheet_tmp_button
+Global $timesheet_week_combo
+Global $timesheet_this_week_button
 
 Global $add_time_entry_gui
 Global $add_time_entry_project_listview
@@ -384,6 +388,29 @@ Func GUICtrlCreateComboFromDictWithLabel(ByRef $label, $label_text = "", $label_
 	EndIf
 
 	_GUICtrlComboBox_SetCurSel($ctrl, 0)
+	Return $ctrl
+
+EndFunc
+
+Func GUICtrlCreateComboEx($left, $top, $width, $height, $tooltip_text = "", $resizing = -1, $hide = False)
+
+	local $ctrl = GUICtrlCreateCombo("", $left, $top, $width, $height, $CBS_DROPDOWNLIST)
+
+	if StringLen($tooltip_text) > 0 Then
+
+		_GUIToolTip_AddTool($tooltip, 0, $tooltip_text, GUICtrlGetHandle(-1))
+	EndIf
+
+	if $resizing > -1 Then
+
+		GUICtrlSetResizing(-1, $resizing)
+	EndIf
+
+	if $hide = True Then
+
+		GUICtrlSetState(-1, $GUI_HIDE)
+	EndIf
+
 	Return $ctrl
 
 EndFunc
@@ -707,7 +734,7 @@ Func depress_button_and_disable_gui($button, $gui = -1, $delay = 0)
 	if $gui = -1 Then $gui = $main_gui
 
 	GUICtrlSetStyle($button, -1, $WS_EX_CLIENTEDGE)
-    GUISetCursor(15, 1, $gui)
+    GUISetCursor(15, 0, $gui)
 	GUISetState(@SW_DISABLE, $gui)
 	Local $focus_dummy = GUICtrlCreateDummy()
 	GUICtrlSetState($focus_dummy, $GUI_FOCUS)
@@ -722,7 +749,7 @@ EndFunc
 Func raise_button_and_enable_gui($button, $gui = $main_gui)
 
 	GUICtrlSetStyle($button, -1, $WS_EX_DLGMODALFRAME)
-    GUISetCursor(2, 1, $gui)
+    GUISetCursor(2, 0, $gui)
 	GUISetState(@SW_ENABLE, $gui)
 
 EndFunc
@@ -797,4 +824,25 @@ Func GUICtrlListView_GetTopMostIndex($listview)
 	Next
 
 	return $top_most_item_index
+EndFunc
+
+Func GetLastMondayDate($format = "")
+
+	Local $days_from_today
+	Local $last_monday_date
+	Local $date_part
+
+	for $days_from_today = 0 to -7 step -1
+
+		$last_monday_date = _DateAdd('d', $days_from_today, _NowCalcDate())
+		$date_part = StringSplit($last_monday_date, "/", 3)
+		Local $spent_date_day_to_week_index = _DateToDayOfWeek($date_part[0], $date_part[1], $date_part[2])
+
+		if $spent_date_day_to_week_index = 2 Then ExitLoop
+	Next
+
+	if StringLen($format) = 0 Then return $last_monday_date
+
+	return _Date_Time_Convert($last_monday_date, "yyyy/MM/dd", $format)
+
 EndFunc
