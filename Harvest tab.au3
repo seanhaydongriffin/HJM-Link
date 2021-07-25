@@ -18,8 +18,8 @@ Func Harvest_tab_setup()
 
 	GUICtrlCreateTabItemEx("Harvest")
 	;GUICtrlCreateGroupEx  ("", 20, 140, 250, 500)
-	$timesheet_week_total_label = 												GUICtrlCreateLabel("Week Starting", 40, 110, 120, 20)
-	$timesheet_week_combo = 													GUICtrlCreateComboEx(130, 105, 100, 20)
+	$timesheet_week_total_label = 												GUICtrlCreateLabelEx("Week Starting", 40, 110, 120, 20, "", $GUI_DOCKALL)
+	$timesheet_week_combo = 													GUICtrlCreateComboEx(130, 105, 100, 20, "", $GUI_DOCKALL)
 
 
 	$startjuldate = _DateToDayValue(@YEAR - 1,1,1)
@@ -36,15 +36,15 @@ Func Harvest_tab_setup()
 
 	_GUICtrlComboBox_SelectString($timesheet_week_combo, GetLastMondayDate("dd/MM/yyyy"))
 
-	$timesheet_this_week_button = 												GUICtrlCreateImageButton("week.ico", 250, 90, 36, "View this week", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-	$timesheet_refresh_button = 												GUICtrlCreateImageButton("refresh.ico", 290, 90, 36, "Get your Harvest times", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-	$timesheet_add_button = 													GUICtrlCreateImageButton("add.ico", 330, 90, 36, "Add a new Time Entry")
-	$timesheet_delete_button = 													GUICtrlCreateImageButton("delete.ico", 370, 90, 36, "Delete the selected Time Entry")
-	$timesheet_week_total_label = 												GUICtrlCreateLabel("Week Total : 0 hrs", 635, 110, 400, 20)
+	$timesheet_this_week_button = 												GUICtrlCreateImageButton("week.ico", 250, 90, 36, "View this week", $GUI_DOCKALL)
+	$timesheet_refresh_button = 												GUICtrlCreateImageButton("refresh.ico", 290, 90, 36, "Get your Harvest times", $GUI_DOCKALL)
+	$timesheet_add_button = 													GUICtrlCreateImageButton("add.ico", 330, 90, 36, "Add a new Time Entry", $GUI_DOCKALL)
+	$timesheet_delete_button = 													GUICtrlCreateImageButton("delete.ico", 370, 90, 36, "Delete the selected Time Entry", $GUI_DOCKALL)
+	$timesheet_week_total_label = 												GUICtrlCreateLabelEx("Week Total : 0 hrs", 635, 110, 400, 20, "", $GUI_DOCKRIGHT + $GUI_DOCKWIDTH + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 
 
 
-	$timesheet_listview = 														GUICtrlCreateListViewEx(30, 130, 760, 500, "Project", 240, "Task", 160, "Notes", 260, "Hours", 100, "ID", 160)
+	$timesheet_listview = 														GUICtrlCreateListViewEx(30, 130, 760, 500, $GUI_DOCKBORDERS, "Project", 240, "Task", 160, "Notes", 260, "Hours", 90, "ID", 0)
 	_GUICtrlListView_EnableGroupView($timesheet_listview)
 	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 1, "Monday")
 	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 2, "Tuesday")
@@ -61,34 +61,40 @@ EndFunc
 Func Harvest_tab_child_gui_setup()
 
 	$add_time_entry_gui = 														ChildGUICreate($app_name & " - Add Time Entry", 640, 640, $main_gui)
+
 	GUICtrlCreateGroupEx ("Project", 5, 5, 630, 260)
-	$add_time_entry_project_listview = 											GUICtrlCreateListViewEx(10, 25, 400, 235, "Name", 600, "ID", 160)
-	GUICtrlCreateGroupEx ("Filters", 420, 20, 200, 245)
-	$add_time_entry_project_filters_list = 										GUICtrlCreateList("", 425, 40, 180, 170, BitOR($GUI_SS_DEFAULT_LIST, $WS_HSCROLL))
-	$add_time_entry_project_filters_add_button = 								GUICtrlCreateImageButton("add.ico", 425, 220, 36, "Add a new Project Filter")
-	$add_time_entry_project_filters_delete_button = 							GUICtrlCreateImageButton("delete.ico", 465, 220, 36, "Delete the selected Project Filter")
-	$add_time_entry_project_filters_enable_checkbox = 							GUICtrlCreateCheckboxEx("Enable filters", 505, 220, 100, 20, True)
-	GUICtrlCreateGroupEx ("Task", 5, 275, 630, 260)
-	$add_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 295, 400, 230, "Name", 200, "ID", 160)
-    $add_time_entry_hour_input_radio =											GUICtrlCreateRadioEx("", 20, 540, 20, 20, False, "")
-	$add_time_entry_hour_input = 												GUICtrlCreateInput("", 40, 540, 40, 20)
-    $add_time_entry_half_hour_radio =											GUICtrlCreateRadioEx("0.5", 90, 540, 40, 20, False, "half hour")
-    $add_time_entry_one_hour_radio =											GUICtrlCreateRadioEx("1.0", 140, 540, 40, 20, True, "one hour")
-    $add_time_entry_one_half_hour_radio =										GUICtrlCreateRadioEx("1.5", 190, 540, 40, 20, False, "one and half hour")
-    $add_time_entry_two_hour_radio =											GUICtrlCreateRadioEx("2.0", 240, 540, 40, 20, False, "two hour")
-    $add_time_entry_two_half_hour_radio =										GUICtrlCreateRadioEx("2.5", 290, 540, 40, 20, False, "two and half hour")
-    $add_time_entry_three_hour_radio =											GUICtrlCreateRadioEx("3.0", 340, 540, 40, 20, False, "three hour")
-    $add_time_entry_three_half_hour_radio =										GUICtrlCreateRadioEx("3.5", 390, 540, 40, 20, False, "three and half hour")
-    $add_time_entry_four_hour_radio =											GUICtrlCreateRadioEx("4.0", 440, 540, 40, 20, False, "four hour")
-    $add_time_entry_four_half_hour_radio =										GUICtrlCreateRadioEx("4.5", 490, 540, 40, 20, False, "four and half hour")
-    $add_time_entry_five_hour_radio =											GUICtrlCreateRadioEx("5.0", 540, 540, 40, 20, False, "five hour")
-	$add_time_entry_save_button = 												GUICtrlCreateImageButton("save.ico", 10, 640 - 70, 36, "Save this new Time Entry")
+	$add_time_entry_project_listview = 											GUICtrlCreateListViewEx(10, 25, 400, 235, $GUI_DOCKBORDERS, "Name", 600, "ID", 0)
+	GUICtrlCreateGroupEx ("Task", 5, 275, 630, 200, "", $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT)
+	$add_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 295, 400, 170, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT, "Name", 600, "ID", 0)
+	GUICtrlCreateGroupEx ("Notes", 5, 485, 630, 50, "", $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT)
+	$add_time_entry_notes_input = 												GUICtrlCreateInputEx("", 10, 500, 610, 20, "", $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT)
+	$add_time_entry_hour_input = 												GUICtrlCreateInputEx("", 40, 540, 40, 20, "", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_hour_input_radio =											GUICtrlCreateRadioEx("", 20, 540, 20, 20, False, "", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_half_hour_radio =											GUICtrlCreateRadioEx("0.5", 90, 540, 40, 20, False, "half hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_one_hour_radio =											GUICtrlCreateRadioEx("1.0", 140, 540, 40, 20, True, "one hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_one_half_hour_radio =										GUICtrlCreateRadioEx("1.5", 190, 540, 40, 20, False, "one and half hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_two_hour_radio =											GUICtrlCreateRadioEx("2.0", 240, 540, 40, 20, False, "two hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_two_half_hour_radio =										GUICtrlCreateRadioEx("2.5", 290, 540, 40, 20, False, "two and half hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_three_hour_radio =											GUICtrlCreateRadioEx("3.0", 340, 540, 40, 20, False, "three hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_three_half_hour_radio =										GUICtrlCreateRadioEx("3.5", 390, 540, 40, 20, False, "three and half hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_four_hour_radio =											GUICtrlCreateRadioEx("4.0", 440, 540, 40, 20, False, "four hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_four_half_hour_radio =										GUICtrlCreateRadioEx("4.5", 490, 540, 40, 20, False, "four and half hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+    $add_time_entry_five_hour_radio =											GUICtrlCreateRadioEx("5.0", 540, 540, 40, 20, False, "five hour", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$add_time_entry_save_button = 												GUICtrlCreateImageButton("save.ico", 10, 640 - 70, 36, "Save this new Time Entry", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 	;$add_time_entry_cancel_button = 											GUICtrlCreateImageButton("cancel.ico", 50, 640 - 70, 36, "Cancel this Time Entry")
-	GUICtrlCreateGroupEx ("Filters", 420, 290, 200, 240)
-	$add_time_entry_task_filters_list = 										GUICtrlCreateList("", 425, 310, 180, 170, BitOR($GUI_SS_DEFAULT_LIST, $WS_HSCROLL))
-	$add_time_entry_task_filters_add_button = 									GUICtrlCreateImageButton("add.ico", 425, 490, 36, "Add a new Favourite Task")
-	$add_time_entry_task_filters_delete_button = 								GUICtrlCreateImageButton("delete.ico", 465, 490, 36, "Delete the selected Favourite Task")
-	$add_time_entry_task_filters_enable_checkbox = 								GUICtrlCreateCheckboxEx("Enable filters", 505, 490, 100, 20, True)
+
+	GUICtrlCreateGroupEx ("Filters", 420, 20, 200, 245, "", $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH)
+	$add_time_entry_project_filters_list = 										GUICtrlCreateListEx(425, 40, 180, 170, "", $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH)
+	$add_time_entry_project_filters_add_button = 								GUICtrlCreateImageButton("add.ico", 425, 220, 36, "Add a new Project Filter", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$add_time_entry_project_filters_delete_button = 							GUICtrlCreateImageButton("delete.ico", 465, 220, 36, "Delete the selected Project Filter", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$add_time_entry_project_filters_enable_checkbox = 							GUICtrlCreateCheckboxEx("Enable filters", 505, 220, 100, 20, True, "", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	GUICtrlCreateGroupEx ("Filters", 420, 290, 200, 180, "", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$add_time_entry_task_filters_list = 										GUICtrlCreateListEx(425, 310, 180, 110, "", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$add_time_entry_task_filters_add_button = 									GUICtrlCreateImageButton("add.ico", 425, 430, 36, "Add a new Favourite Task", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$add_time_entry_task_filters_delete_button = 								GUICtrlCreateImageButton("delete.ico", 465, 430, 36, "Delete the selected Favourite Task", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$add_time_entry_task_filters_enable_checkbox = 								GUICtrlCreateCheckboxEx("Enable filters", 505, 430, 100, 20, True, "", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+
+
 	$add_time_entry_status_input = 												GUICtrlCreateStatusInput("", 10, 640 - 25, 640 - 20, 20)
 ;	GUICtrlCreateGroupEx  ("----> PC", 200, 5, 180, 40)
 ;	$boot_config_open_button = 													GUICtrlCreateButton("Open", 205, 20, 80, 20)
@@ -98,8 +104,8 @@ Func Harvest_tab_child_gui_setup()
 
 	$edit_time_entry_gui = 														ChildGUICreate($app_name & " - Edit Time Entry", 640, 640, $main_gui)
 ;	GUICtrlCreateGroupEx  ("----> RetroPie (/boot/config.txt)", 5, 5, 180, 40)
-	$edit_time_entry_project_listview = 										GUICtrlCreateListViewEx(10, 10, 550, 100, "Project", 160, "ID", 160)
-	$edit_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 130, 550, 100, "Task", 160, "ID", 160)
+	$edit_time_entry_project_listview = 										GUICtrlCreateListViewEx(10, 10, 550, 100, $GUI_DOCKBORDERS, "Project", 160, "ID", 160)
+	$edit_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 130, 550, 100, $GUI_DOCKBORDERS, "Task", 160, "ID", 160)
 	$edit_time_entry_save_button = 												GUICtrlCreateImageButton("save.ico", 10, 640 - 70, 36, "Save this Time Entry")
 	;$edit_time_entry_cancel_button = 											GUICtrlCreateImageButton("cancel.ico", 50, 640 - 70, 36, "Cancel this edit")
 	$edit_time_entry_status_input = 											GUICtrlCreateStatusInput("", 10, 640 - 25, 640 - 20, 20)
@@ -111,6 +117,15 @@ EndFunc
 Func Harvest_tab_event_handler($msg)
 
 	Switch $msg
+
+		Case $GUI_EVENT_RESIZED
+
+			if $current_gui = $add_time_entry_gui Then
+
+				; below is a workaround for docking rich edit controls ($status_input)
+				$aSize = WinGetClientSize($add_time_entry_gui)
+				_WinAPI_SetWindowPos($add_time_entry_status_input, $HWND_TOP, 5, $aSize[1] - 25, $aSize[0] - 10, 20, $SWP_SHOWWINDOW)
+			EndIf
 
 		Case $GUI_EVENT_CLOSE
 
@@ -278,8 +293,10 @@ Func Harvest_tab_event_handler($msg)
 			if GUICtrlRead($add_time_entry_four_half_hour_radio) = $GUI_CHECKED Then $hours = "4.5"
 			if GUICtrlRead($add_time_entry_five_hour_radio) = $GUI_CHECKED Then $hours = "5.0"
 
+			Local $notes = GUICtrlRead($add_time_entry_notes_input)
+
 			GUICtrlStatusInput_SetText($add_time_entry_status_input, "Please Wait. Saving the time entry ...")
-			Local $iPID = Run('curl -k "https://api.harvestapp.com/v2/time_entries?project_id=' & $selected_project_id & '&task_id=' & $selected_task_id & '&spent_date=' & @YEAR & '-' & $time_entry_date_part[2] & '-' & $time_entry_date_part[1] & '&hours=' & $hours & '" -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X POST -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+			Local $iPID = Run('curl -k "https://api.harvestapp.com/v2/time_entries?project_id=' & $selected_project_id & '&task_id=' & $selected_task_id & '&spent_date=' & @YEAR & '-' & $time_entry_date_part[2] & '-' & $time_entry_date_part[1] & '&hours=' & $hours & '&notes=' & $notes & '" -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X POST -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
 			ProcessWaitClose($iPID)
 			Local $json = StdoutRead($iPID)
 			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
@@ -292,14 +309,14 @@ Func Harvest_tab_event_handler($msg)
 
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_project_name, 0)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_task_name, 1)
-				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), "", 2)
+				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $notes, 2)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $hours, 3)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $id, 4)
 			Else
 
 				Local $index = _GUICtrlListView_AddItem($timesheet_listview, $selected_project_name)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $selected_task_name, 1)
-				_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 2)
+				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $notes, 2)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $hours, 3)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $id, 4)
 				_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, _GUICtrlListView_GetItemGroupID($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))))
@@ -451,6 +468,14 @@ Func Harvest_tab_WM_NOTIFY_handler($hWndFrom, $iCode)
 
 EndFunc
 
+
+Func Harvest_tab_WM_SIZING_handler()
+
+	; below is a workaround for docking rich edit controls ($status_input)
+	$aSize = WinGetClientSize($add_time_entry_gui)
+	_WinAPI_SetWindowPos($add_time_entry_status_input, $HWND_TOP, 5, $aSize[1] - 25, $aSize[0] - 10, 20, $SWP_SHOWWINDOW)
+
+EndFunc
 
 Func Harvest_tab_WM_COMMAND_handler($hWndFrom, $iCode)
 

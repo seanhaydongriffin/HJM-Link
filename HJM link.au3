@@ -11,14 +11,11 @@
 #Include "Jira tab.au3"
 #Include "Metronome tab.au3"
 
-
-
-
 HJM_Link_Startup()
 
 ; Main gui
 
-$main_gui = 																	MainGUICreate($tab, 5, 50, 840-10, 720-80, $GUI_DOCKVCENTER + $GUI_DOCKBORDERS)
+$main_gui = 																	MainGUICreate($tab, 5, 50, 840-10, 720-80)
 $status_input = 																GUICtrlCreateStatusInput("Hint - hover mouse over controls for help", 5, 720 - 25, 830, 20)
 
 ; Main gui tabs
@@ -32,11 +29,11 @@ Metronome_tab_setup()
 
 Harvest_tab_child_gui_setup()
 
-
 $current_gui = $main_gui
 GUISetState(@SW_SHOW, $main_gui)
 GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
 GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
+GUIRegisterMsg($WM_SIZING, "WM_SIZING")
 _TipDisplayLen(30000)
 _GUICtrlTab_SetCurFocus($tab, Number(IniRead($ini_filename, "Global", "Tab", 1)))
 
@@ -49,6 +46,15 @@ While True
 
 	Switch $msg
 
+		Case $GUI_EVENT_RESIZED
+
+			if $current_gui = $main_gui Then
+
+				; below is a workaround for docking rich edit controls ($status_input)
+				$aSize = WinGetClientSize($main_gui)
+				_WinAPI_SetWindowPos($status_input, $HWND_TOP, 5, $aSize[1] - 25, $aSize[0] - 10, 20, $SWP_SHOWWINDOW)
+			EndIf
+
 		Case $GUI_EVENT_CLOSE
 
 			if $current_gui = $main_gui Then
@@ -57,7 +63,6 @@ While True
 				GUISetState(@SW_HIDE, $current_gui)
 				GUIDelete($current_gui)
 				ExitLoop
-
 			EndIf
 
 	EndSwitch
@@ -70,6 +75,39 @@ While True
 WEnd
 
 HJM_Link_Shutdown()
+
+
+
+
+Func WM_SIZING($hWnd, $iMsg, $iwParam, $ilParam)
+    #forceref $hWnd, $iMsg, $iwParam, $ilParam
+
+	; TAB specific WM_COMMAND handlers ...
+
+	Harvest_tab_WM_SIZING_handler()
+
+	; below is a workaround for docking rich edit controls ($status_input)
+	$aSize = WinGetClientSize($main_gui)
+	_WinAPI_SetWindowPos($status_input, $HWND_TOP, 5, $aSize[1] - 25, $aSize[0] - 10, 20, $SWP_SHOWWINDOW)
+
+    ; A pointer to a RECT structure with the screen coordinates of the drag rectangle
+    ; To change the size or position of the drag rectangle, an application must change the members of this structure.
+;    Local $tRECT = DllStructCreate("int;int;int;int", $ilParam) ; $tagRECT
+;    Local $iLeft, $iTop, $iRight, $iBottom
+;    $iLeft = DllStructGetData($tRECT, 1)
+;    $iTop = DllStructGetData($tRECT, 2)
+;    $iRight = DllStructGetData($tRECT, 3)
+;    $iBottom = DllStructGetData($tRECT, 4)
+
+;~     ;  Uncomment this line have the window stretched to desktop width
+;~     DllStructSetData($tRECT, 1, 0) ;left
+;~     DllStructSetData($tRECT, 3, @DesktopWidth) ;right
+
+;    $tRECT = 0
+
+    Return $GUI_RUNDEFMSG
+EndFunc
+
 
 Func WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
 	#forceref $hWnd, $iMsg, $wParam

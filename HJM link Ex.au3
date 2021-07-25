@@ -87,6 +87,7 @@ Global $add_time_entry_task_filters_list
 Global $add_time_entry_task_filters_add_button
 Global $add_time_entry_task_filters_delete_button
 Global $add_time_entry_task_filters_enable_checkbox
+Global $add_time_entry_notes_input
 Global $add_time_entry_hour_input_radio
 Global $add_time_entry_hour_input
 Global $add_time_entry_half_hour_radio
@@ -321,10 +322,10 @@ EndFunc   ;==>_DBG_StringSplit2d
 
 
 
-Func MainGUICreate(ByRef $tab, $tab_left, $tab_top, $tab_width, $tab_height, $tab_resizing)
+Func MainGUICreate(ByRef $tab, $tab_left, $tab_top, $tab_width, $tab_height)
 
 	Local $gui = GUICreate($app_name & " - Main", $main_gui_width, $main_gui_height, -1, -1, BitOR($WS_MINIMIZEBOX, $WS_MAXIMIZEBOX, $WS_SIZEBOX, $WS_CAPTION, $WS_POPUP, $WS_SYSMENU))
-	$tab = GUICtrlCreateTabEx($tab_left, $tab_top, $tab_width, $tab_height, $tab_resizing)
+	$tab = GUICtrlCreateTabEx($tab_left, $tab_top, $tab_width, $tab_height)
 	$current_gui = $gui
 
 	Return $gui
@@ -391,6 +392,7 @@ Func GUICtrlCreateComboFromDictWithLabel(ByRef $label, $label_text = "", $label_
 	Return $ctrl
 
 EndFunc
+
 
 Func GUICtrlCreateComboEx($left, $top, $width, $height, $tooltip_text = "", $resizing = -1, $hide = False)
 
@@ -461,10 +463,10 @@ EndFunc
 
 
 
-Func GUICtrlCreateTabEx($left, $top, $width, $height, $resizing )
+Func GUICtrlCreateTabEx($left, $top, $width, $height )
 
 	local $ctrl = GUICtrlCreateTab($left, $top, $width, $height)
-	GUICtrlSetResizing(-1, $resizing)
+	GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 	Return $ctrl
 
 EndFunc
@@ -527,7 +529,8 @@ Func GUICtrlCreateStatusInput($text, $left, $top, $width, $height)
 	Local $status_input_footer = "\line "
 
 	local $input = _GUICtrlRichEdit_Create($current_gui, $status_input_header & $text & $status_input_footer, $left, $top, $width, $height, $ES_READONLY)
-	GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT + $GUI_DOCKLEFT + $GUI_DOCKRIGHT)
+;	GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT + $GUI_DOCKLEFT + $GUI_DOCKRIGHT)
+	GUICtrlSetResizing($input, $GUI_DOCKAUTO)
 	_GUICtrlRichEdit_SetEventMask($input, $ENM_LINK)
 	_GUICtrlRichEdit_AutoDetectURL($input, True)
 	Return $input
@@ -551,10 +554,9 @@ Func GUICtrlCreateSliderEx($left, $top, $width, $height, $resizing, $max, $min, 
 	Return $ctrl
 EndFunc
 
-Func GUICtrlCreateCheckboxEx($text, $left, $top, $width, $height, $checked = False, $tooltip_text = "")
+Func GUICtrlCreateCheckboxEx($text, $left, $top, $width, $height, $checked = False, $tooltip_text = "", $resizing = $GUI_DOCKALL)
 
 	local $ctrl = GUICtrlCreateCheckbox($text, $left, $top, $width, $height)
-	GUICtrlSetResizing(-1, $GUI_DOCKALL)
 
 	if $checked = True Then
 
@@ -569,31 +571,58 @@ Func GUICtrlCreateCheckboxEx($text, $left, $top, $width, $height, $checked = Fal
 		_GUIToolTip_AddTool($tooltip, 0, $tooltip_text, GUICtrlGetHandle($ctrl))
 	EndIf
 
-	Return $ctrl
+	if $resizing > -1 Then
 
-EndFunc
-
-Func GUICtrlCreateLabelEx($text, $left, $top, $width, $height, $tooltip_text = "")
-
-	local $ctrl = GUICtrlCreateLabel($text, $left, $top, $width, $height)
-	GUICtrlSetResizing(-1, $GUI_DOCKALL)
-
-	if StringLen($tooltip_text) > 0 Then
-
-		_GUIToolTip_AddTool($tooltip, 0, $tooltip_text, GUICtrlGetHandle($ctrl))
+		GUICtrlSetResizing(-1, $resizing)
 	EndIf
 
 	Return $ctrl
 
 EndFunc
 
-Func GUICtrlCreateRadioEx($text, $left, $top, $width, $height, $checked = False, $tooltip_text = "", $resizing = -1, $hide = False)
+Func GUICtrlCreateLabelEx($text, $left, $top, $width, $height, $tooltip_text = "", $resizing = -1)
+
+	local $ctrl = GUICtrlCreateLabel($text, $left, $top, $width, $height)
+
+	if StringLen($tooltip_text) > 0 Then
+
+		_GUIToolTip_AddTool($tooltip, 0, $tooltip_text, GUICtrlGetHandle($ctrl))
+	EndIf
+
+	if $resizing > -1 Then
+
+		GUICtrlSetResizing(-1, $resizing)
+	EndIf
+
+	Return $ctrl
+
+EndFunc
+
+Func GUICtrlCreateInputEx($text, $left, $top, $width, $height, $tooltip_text = "", $resizing = -1)
+
+	local $ctrl = GUICtrlCreateInput($text, $left, $top, $width, $height)
+
+	if StringLen($tooltip_text) > 0 Then
+
+		_GUIToolTip_AddTool($tooltip, 0, $tooltip_text, GUICtrlGetHandle($ctrl))
+	EndIf
+
+	if $resizing > -1 Then
+
+		GUICtrlSetResizing(-1, $resizing)
+	EndIf
+
+	Return $ctrl
+
+EndFunc
+
+Func GUICtrlCreateRadioEx($text, $left, $top, $width, $height, $checked = False, $tooltip_text = "", $resizing = $GUI_DOCKALL, $hide = False)
 
 	local $ctrl = GUICtrlCreateRadio($text, $left, $top, $width, $height)
 
 	if $resizing > -1 Then
 
-		GUICtrlSetResizing(-1, $GUI_DOCKALL)
+		GUICtrlSetResizing(-1, $resizing)
 	EndIf
 
 	if $checked = True Then
@@ -635,7 +664,7 @@ Func GUICtrlCreateSingleSelectList($left, $top, $width, $height, $horizontal_scr
 EndFunc
 
 
-Func GUICtrlCreateListViewEx($left, $top, $width, $height, $col_1_name = Null, $col_1_width = Null, $col_2_name = Null, $col_2_width = Null, $col_3_name = Null, $col_3_width = Null, $col_4_name = Null, $col_4_width = Null, $col_5_name = Null, $col_5_width = Null, $row_1_col_1_value = Null, $row_1_col_2_value = Null, $row_1_col_3_value = Null, $row_1_col_4_value = Null, $row_1_col_5_value = Null, $row_2_col_1_value = Null, $row_2_col_2_value = Null, $row_2_col_3_value = Null, $row_2_col_4_value = Null, $row_2_col_5_value = Null, $row_3_col_1_value = Null, $row_3_col_2_value = Null, $row_3_col_3_value = Null, $row_3_col_4_value = Null, $row_3_col_5_value = Null, $row_4_col_1_value = Null, $row_4_col_2_value = Null, $row_4_col_3_value = Null, $row_4_col_4_value = Null, $row_4_col_5_value = Null, $row_5_col_1_value = Null, $row_5_col_2_value = Null, $row_5_col_3_value = Null, $row_5_col_4_value = Null, $row_5_col_5_value = Null)
+Func GUICtrlCreateListViewEx($left, $top, $width, $height, $resizing = $GUI_DOCKBORDERS, $col_1_name = Null, $col_1_width = Null, $col_2_name = Null, $col_2_width = Null, $col_3_name = Null, $col_3_width = Null, $col_4_name = Null, $col_4_width = Null, $col_5_name = Null, $col_5_width = Null, $row_1_col_1_value = Null, $row_1_col_2_value = Null, $row_1_col_3_value = Null, $row_1_col_4_value = Null, $row_1_col_5_value = Null, $row_2_col_1_value = Null, $row_2_col_2_value = Null, $row_2_col_3_value = Null, $row_2_col_4_value = Null, $row_2_col_5_value = Null, $row_3_col_1_value = Null, $row_3_col_2_value = Null, $row_3_col_3_value = Null, $row_3_col_4_value = Null, $row_3_col_5_value = Null, $row_4_col_1_value = Null, $row_4_col_2_value = Null, $row_4_col_3_value = Null, $row_4_col_4_value = Null, $row_4_col_5_value = Null, $row_5_col_1_value = Null, $row_5_col_2_value = Null, $row_5_col_3_value = Null, $row_5_col_4_value = Null, $row_5_col_5_value = Null)
 
 	Local $col_heading_definition = ""
 
@@ -683,6 +712,11 @@ Func GUICtrlCreateListViewEx($left, $top, $width, $height, $col_1_name = Null, $
 
 	_GUICtrlListView_SetExtendedListViewStyle(-1, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT))
 
+	if $resizing > -1 Then
+
+		GUICtrlSetResizing(-1, $resizing)
+	EndIf
+
 	Return $ctrl
 
 EndFunc
@@ -719,12 +753,31 @@ Func GUICtrlCreateTabItemEx($text)
 
 EndFunc
 
-Func GUICtrlCreateGroupEx($text, $left, $top, $width, $height)
+Func GUICtrlCreateGroupEx($text, $left, $top, $width, $height, $tooltip_text = "", $resizing = $GUI_DOCKBORDERS)
 
 	$text = StringReplace($text, "-", "")
 	$text = StringReplace($text, ">", "")
 	$text = StringStripWS($text, 3)
 	Local $ctrl = GUICtrlCreateGroup($text, $left, $top, $width, $height)
+
+	if $resizing > -1 Then
+
+		GUICtrlSetResizing(-1, $resizing)
+	EndIf
+
+	Return $ctrl
+
+EndFunc
+
+Func GUICtrlCreateListEx($left, $top, $width, $height, $tooltip_text = "", $resizing = $GUI_DOCKBORDERS)
+
+	Local $ctrl = GUICtrlCreateList("", $left, $top, $width, $height, BitOR($GUI_SS_DEFAULT_LIST, $WS_HSCROLL))
+
+	if $resizing > -1 Then
+
+		GUICtrlSetResizing(-1, $resizing)
+	EndIf
+
 	Return $ctrl
 
 EndFunc
