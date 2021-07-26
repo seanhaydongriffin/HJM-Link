@@ -34,6 +34,7 @@ Global $alphanumeric_arr[36] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
 Global $iStyle = BitOR($TVS_EDITLABELS, $TVS_HASBUTTONS, $TVS_HASLINES, $TVS_LINESATROOT, $TVS_DISABLEDRAGDROP, $TVS_SHOWSELALWAYS, $TVS_CHECKBOXES)
 Global $current_gui
 Global $result = 1
+Global $iPID
 Global $metronome_token
 Global $timesheet_project_id_dict = ObjCreate("Scripting.Dictionary")
 Global $timesheet_project_assignments_dict = ObjCreate("Scripting.Dictionary")
@@ -71,6 +72,7 @@ Global $timesheet_week_total_label
 Global $timesheet_listview
 Global $timesheet_refresh_button
 Global $timesheet_add_button
+Global $timesheet_edit_button
 Global $timesheet_delete_button
 Global $timesheet_tmp_button
 Global $timesheet_week_combo

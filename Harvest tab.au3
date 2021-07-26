@@ -148,10 +148,12 @@ Func Harvest_tab_event_handler($msg)
 
 			if $current_gui = $add_time_entry_gui Then
 
+				TimeEntrySetState($GUI_ENABLE)
+				if StringInStr(WinGetTitle($current_gui), "Add Time Entry") > 0 Then raise_button_and_enable_gui($timesheet_add_button)
+				if StringInStr(WinGetTitle($current_gui), "Edit Time Entry") > 0 Then raise_button_and_enable_gui($timesheet_edit_button)
 				GUISetState(@SW_ENABLE, $main_gui)
 				GUISetState(@SW_HIDE, $current_gui)
 				$current_gui = $main_gui
-				raise_button_and_enable_gui($timesheet_add_button)
 			EndIf
 
 
@@ -165,7 +167,7 @@ Func Harvest_tab_event_handler($msg)
 			GUICtrlSetState($timesheet_listview, $GUI_FOCUS)
 
 
-		Case $timesheet_add_button
+		Case $timesheet_add_button, $timesheet_edit_button
 
 			depress_button_and_disable_gui($msg)
 			GUISetState(@SW_DISABLE, $main_gui)
@@ -174,8 +176,11 @@ Func Harvest_tab_event_handler($msg)
 			GUICtrlSetState($add_time_entry_save_button, $GUI_DEFBUTTON)
 
 			$selected_group_info = _GUICtrlListView_GetGroupInfo($timesheet_listview, _GUICtrlListView_GetItemGroupID($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))))
-			$selected_timesheet_date = $selected_group_info[0]
-			WinSetTitle($current_gui, "", $app_name & " - Add Time Entry for " & $selected_timesheet_date)
+			Local $selected_timesheet_date_part = StringSplit($selected_group_info[0], " = ", 3)
+			$selected_timesheet_date = $selected_timesheet_date_part[0]
+
+			if $msg = $timesheet_add_button Then WinSetTitle($current_gui, "", $app_name & " - Add Time Entry for " & $selected_timesheet_date)
+			if $msg = $timesheet_edit_button Then WinSetTitle($current_gui, "", $app_name & " - Edit Time Entry for " & $selected_timesheet_date)
 
 			; pull the filters from file
 			GUICtrlListBoxFromFile($add_time_entry_project_filters_list, $project_filters_path)
@@ -184,8 +189,8 @@ Func Harvest_tab_event_handler($msg)
 
 			if $project_assignments_loaded = False Then
 
+				TimeEntrySetState($GUI_DISABLE)
 				_GUICtrlListView_DeleteAllItems($add_time_entry_project_listview)
-
 				Local $total_pages = 1
 				Local $page_num = 0
 
@@ -206,7 +211,7 @@ Func Harvest_tab_event_handler($msg)
 						GUICtrlStatusInput_SetText($add_time_entry_status_input, "Please Wait. Getting your Harvest projects and tasks (page " & $page_num & " of " & $total_pages & ") ...")
 					EndIf
 
-					Local $iPID = Run('curl -k https://api.harvestapp.com/v2/users/me/project_assignments?page=' & $page_num & '&per_page=100 -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+					$iPID = Run('curl -k https://api.harvestapp.com/v2/users/me/project_assignments?page=' & $page_num & '&per_page=100 -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
 					ProcessWaitClose($iPID)
 					Local $json = StdoutRead($iPID)
 					Local $decoded_json = Json_Decode($json)
@@ -252,12 +257,27 @@ Func Harvest_tab_event_handler($msg)
 				Next
 
 				_GUICtrlListView_EndUpdate($add_time_entry_project_listview)
-				_GUICtrlListView_SetItemSelected($add_time_entry_project_listview, 0, true, true)
-
 				FilterProject()
 
+				if $msg = $timesheet_add_button Then _GUICtrlListView_SetItemSelected($add_time_entry_project_listview, 0, true, true)
+
+				TimeEntrySetState($GUI_ENABLE)
 				$project_assignments_loaded = True
 				$update_tasks = True
+			EndIf
+
+			if $msg = $timesheet_edit_button Then
+
+				Local $selected_project_name = _GUICtrlListView_GetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), 0)
+				Local $selected_task_name = _GUICtrlListView_GetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), 1)
+				Local $selected_notes = _GUICtrlListView_GetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), 2)
+				Local $selected_hours = _GUICtrlListView_GetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), 3)
+
+				_GUICtrlListView_SetItemSelected($add_time_entry_project_listview, _GUICtrlListView_FindText($add_time_entry_project_listview, $selected_project_name, -1, False), True, true)
+				_GUICtrlListView_SetItemSelected($add_time_entry_task_listview, _GUICtrlListView_FindText($add_time_entry_task_listview, $selected_task_name, -1, False), True, true)
+				GUICtrlSetData($add_time_entry_notes_input, $selected_notes)
+				GUICtrlSetState($add_time_entry_hour_input_radio, $GUI_CHECKED)
+				GUICtrlSetData($add_time_entry_hour_input, $selected_hours)
 			EndIf
 
 			GUICtrlSetState($add_time_entry_favourites_combo, $GUI_FOCUS)
@@ -334,7 +354,6 @@ Func Harvest_tab_event_handler($msg)
 
 			Local $group_info = _GUICtrlListView_GetGroupInfo($timesheet_listview, _GUICtrlListView_GetItemGroupID($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))))
 			Local $time_entry_date = $group_info[0]
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $time_entry_date = ' & $time_entry_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 			Local $time_entry_date_part = StringSplit($group_info[0], " ", 3)
 			$time_entry_date_part[2] = _ConvertMonth($time_entry_date_part[2])
 			Local $selected_project_name = _GUICtrlListView_GetItemText($add_time_entry_project_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_project_listview)), 0)
@@ -358,16 +377,27 @@ Func Harvest_tab_event_handler($msg)
 			Local $notes = GUICtrlRead($add_time_entry_notes_input)
 
 			GUICtrlStatusInput_SetText($add_time_entry_status_input, "Please Wait. Saving the time entry ...")
-			Local $iPID = Run('curl -k "https://api.harvestapp.com/v2/time_entries?project_id=' & $selected_project_id & '&task_id=' & $selected_task_id & '&spent_date=' & @YEAR & '-' & $time_entry_date_part[2] & '-' & $time_entry_date_part[1] & '&hours=' & HourAndMinutesToHours($hours) & '&notes=' & _URIEncode($notes) & '" -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X POST -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+
+			if StringInStr(WinGetTitle($current_gui), "Add Time Entry") > 0 Or StringCompare(_GUICtrlListView_GetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))), "<click here then add button above>") = 0 Then
+
+				$iPID = Run('curl -k "https://api.harvestapp.com/v2/time_entries?project_id=' & $selected_project_id & '&task_id=' & $selected_task_id & '&spent_date=' & @YEAR & '-' & $time_entry_date_part[2] & '-' & $time_entry_date_part[1] & '&hours=' & HourAndMinutesToHours($hours) & '&notes=' & _URIEncode($notes) & '" -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X POST -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+			Else
+
+				; Edit Time Entry
+
+				Local $selected_time_entry_id = _GUICtrlListView_GetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), 4)
+
+				$iPID = Run('curl -k "https://api.harvestapp.com/v2/time_entries/' & $selected_time_entry_id & '?project_id=' & $selected_project_id & '&task_id=' & $selected_task_id & '&spent_date=' & @YEAR & '-' & $time_entry_date_part[2] & '-' & $time_entry_date_part[1] & '&hours=' & HourAndMinutesToHours($hours) & '&notes=' & _URIEncode($notes) & '" -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X PATCH -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+			EndIf
+
 			ProcessWaitClose($iPID)
 			Local $json = StdoutRead($iPID)
 			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 			Local $decoded_json = Json_Decode($json)
 			Local $id = Json_Get($decoded_json, '.id')
-
 			GUICtrlStatusInput_SetText($add_time_entry_status_input, "")
 
-			if StringCompare(_GUICtrlListView_GetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))), "<click here then add button above>") = 0 Then
+			if StringInStr(WinGetTitle($current_gui), "Edit Time Entry") Or StringCompare(_GUICtrlListView_GetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))), "<click here then add button above>") = 0 Then
 
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_project_name, 0)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_task_name, 1)
@@ -386,10 +416,12 @@ Func Harvest_tab_event_handler($msg)
 
 			UpdateTotalHours()
 
+			TimeEntrySetState($GUI_ENABLE)
+			if StringInStr(WinGetTitle($current_gui), "Add Time Entry") > 0 Then raise_button_and_enable_gui($timesheet_add_button)
+			if StringInStr(WinGetTitle($current_gui), "Edit Time Entry") > 0 Then raise_button_and_enable_gui($timesheet_edit_button)
 			GUISetState(@SW_ENABLE, $main_gui)
 			GUISetState(@SW_HIDE, $current_gui)
 			$current_gui = $main_gui
-			raise_button_and_enable_gui($timesheet_add_button)
 
 		Case $add_time_entry_project_filters_add_button
 
@@ -446,10 +478,9 @@ Func Harvest_tab_event_handler($msg)
 			if StringCompare($selected_project_name, "<click here then add button above>") <> 0 Then
 
 				GUICtrlStatusInput_SetText($status_input, "Please Wait. Deleting the time entry ...")
-				Local $iPID = Run('curl -k https://api.harvestapp.com/v2/time_entries/' & $selected_id & ' -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X DELETE', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+				$iPID = Run('curl -k https://api.harvestapp.com/v2/time_entries/' & $selected_id & ' -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X DELETE', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
 				ProcessWaitClose($iPID)
 				Local $json = StdoutRead($iPID)
-				;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 				GUICtrlStatusInput_SetText($status_input, "")
 
 				Local $selected_group_id = _GUICtrlListView_GetItemGroupID($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)))
@@ -481,7 +512,6 @@ Func Harvest_tab_event_handler($msg)
 	if $update_tasks = True Then
 
 		$update_tasks = False
-		ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $update_tasks = ' & $update_tasks & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 		FilterTask()
 
 	EndIf
@@ -501,7 +531,10 @@ Func Harvest_tab_WM_NOTIFY_handler($hWndFrom, $iCode)
 				Case $LVN_ITEMCHANGED
 
 					Local $index = Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+
+				Case $NM_DBLCLK
+
+					$msg = $timesheet_edit_button
 
 			EndSwitch
 
@@ -553,7 +586,6 @@ Func Harvest_tab_WM_COMMAND_handler($hWndFrom, $iCode)
 					_GUICtrlComboBox_ShowDropDown($timesheet_week_combo, False)
 					Local $week_starting_date = GUICtrlRead($timesheet_week_combo)
 					$week_starting_date = _Date_Time_Convert($week_starting_date, "dd/MM/yyyy", "yyyy/MM/dd")
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $week_starting_date = ' & $week_starting_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 ;					depress_button_and_disable_gui($msg, -1, 100)
 					RefreshTimesheet($week_starting_date)
@@ -571,13 +603,9 @@ Func Harvest_tab_WM_COMMAND_handler($hWndFrom, $iCode)
                 Case $CBN_SELENDOK ; Sent when the user cancels the selection in a list box
 
 					Local $index = _GUICtrlComboBox_GetCurSel($add_time_entry_favourites_combo)
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 					_GUICtrlListView_SetItemSelected($add_time_entry_project_listview, _GUICtrlListView_FindText($add_time_entry_project_listview, $favourite[$index][1], -1, False), True, true)
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $favourite[$index][1] = ' & $favourite[$index][1] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 					_GUICtrlListView_SetItemSelected($add_time_entry_task_listview, _GUICtrlListView_FindText($add_time_entry_task_listview, $favourite[$index][2], -1, False), True, true)
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $favourite[$index][2] = ' & $favourite[$index][2] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 					GUICtrlSetData($add_time_entry_notes_input, $favourite[$index][3])
-					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $favourite[$index][3] = ' & $favourite[$index][3] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 			EndSwitch
 
@@ -731,12 +759,10 @@ EndFunc
 Func FilterTask()
 
 	Local $selected_project = _GUICtrlListView_GetItemText($add_time_entry_project_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_project_listview)), 0)
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $selected_project = ' & $selected_project & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 	_GUICtrlListView_DeleteAllItems($add_time_entry_task_listview)
 
 	Local $task_names = $timesheet_project_assignments_dict.Item($selected_project)
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $task_names = ' & $task_names & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 	;Local $task_name_arr = StringSplit($task_names, "|")
 	Local $task_name_arr = _StringSplit2d($task_names, "|")
@@ -744,7 +770,6 @@ Func FilterTask()
 	if UBound($task_name_arr) > 0 Then
 
 		;$rr = $task_name_arr[UBound($task_name_arr) - 1]
-		;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $rr = ' & $rr & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 		if StringLen($task_name_arr[UBound($task_name_arr) - 1][0]) < 1 Then _ArrayDelete($task_name_arr, UBound($task_name_arr) - 1)
 
@@ -754,13 +779,11 @@ Func FilterTask()
 		; remove any non filtered tasks
 
 		for $i = 0 to (_GUICtrlListView_GetItemCount($add_time_entry_task_listview) - 1)
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $i = ' & $i & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 			Local $delete_task = True
 
 			for $j = 0 to (_GUICtrlListBox_GetCount($add_time_entry_task_filters_list) - 1)
 
-				ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : _GUICtrlListView_GetItemText($add_time_entry_task_listview, $i) = ' & _GUICtrlListView_GetItemText($add_time_entry_task_listview, $i) & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 				if StringInStr(_GUICtrlListView_GetItemText($add_time_entry_task_listview, $i), _GUICtrlListBox_GetText($add_time_entry_task_filters_list, $j)) > 0 Then
 
@@ -772,7 +795,6 @@ Func FilterTask()
 			if $delete_task = True Then
 
 				_GUICtrlListView_DeleteItem($add_time_entry_task_listview, $i)
-				ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') :  $i = ' &  $i & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 				if ($i + 1) > _GUICtrlListView_GetItemCount($add_time_entry_task_listview) Then ExitLoop
 				$i = $i - 1
@@ -791,7 +813,6 @@ EndFunc
 Func UnFilterTask()
 
 	Local $selected_project = _GUICtrlListView_GetItemText($add_time_entry_project_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_project_listview)), 0)
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $selected_project = ' & $selected_project & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 	_GUICtrlListView_DeleteAllItems($add_time_entry_task_listview)
 	Local $task_names = $timesheet_project_assignments_dict.Item($selected_project)
 	Local $task_name_arr = _StringSplit2d($task_names, "|")
@@ -824,7 +845,7 @@ Func UpdateTotalHours()
 	for $i = 0 to 6
 
 		Local $group_info = _GUICtrlListView_GetGroupInfo($timesheet_listview, $i + 1)
-		_GUICtrlListView_SetGroupInfo($timesheet_listview, $i + 1, StringRegExpReplace($group_info[0], " = .*", " = " & HoursToHourAndMinutes($hours_day_of_week[$i])))
+		_GUICtrlListView_SetGroupInfo($timesheet_listview, $i + 1, StringRegExpReplace($group_info[0], " = .*", " = " & HoursToHourAndMinutes($hours_day_of_week[$i])), 2)
 	Next
 
 	GUICtrlSetData($timesheet_week_total_label, "Week Total = " & HoursToHourAndMinutes($week_total_hours))
@@ -839,12 +860,9 @@ Func RefreshTimesheet($week_start_date)
 
 
 	GUICtrlStatusInput_SetText($status_input, "Please Wait. Getting your Harvest times ...")
-	Local $iPID = Run('curl -k https://api.harvestapp.com/v2/time_entries?from=' & StringReplace($week_start_date, "/", "-") & '&to=' & StringReplace($this_sunday_date, "/", "-") & ' -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $this_sunday_date = ' & $this_sunday_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $week_start_date = ' & $week_start_date & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	$iPID = Run('curl -k https://api.harvestapp.com/v2/time_entries?from=' & StringReplace($week_start_date, "/", "-") & '&to=' & StringReplace($this_sunday_date, "/", "-") & ' -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
 	ProcessWaitClose($iPID)
 	Local $json = StdoutRead($iPID)
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 	GUICtrlStatusInput_SetText($status_input, "")
 
 	Local $decoded_json = Json_Decode($json)
@@ -867,8 +885,6 @@ Func RefreshTimesheet($week_start_date)
 			Local $id = Json_Get($decoded_json, '.time_entries[' & $i & '].id')
 
 			Local $index = _GUICtrlListView_AddItem($timesheet_listview, $project)
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $project = ' & $project & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $task, 1)
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $notes, 2)
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, HoursToHourAndMinutes($hours), 3)
@@ -884,8 +900,6 @@ Func RefreshTimesheet($week_start_date)
 		if $times_exist_for_day[$i] = False Then
 
 			Local $index = _GUICtrlListView_AddItem($timesheet_listview, "<click here then add button above>")
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : "<click here then add button above>" = ' & "<click here then add button above>" & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 1)
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 2)
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, "", 3)
@@ -915,3 +929,44 @@ Func RefreshTimesheet($week_start_date)
 
 
 EndFunc
+
+Func TimeEntrySetState($state)
+
+	if $state = $GUI_DISABLE Then
+
+		GUISetCursor(15, 0, $add_time_entry_gui)
+	Else
+
+		GUISetCursor(2, 0, $add_time_entry_gui)
+	EndIf
+
+	GUICtrlSetState($add_time_entry_favourites_combo, 					$state)
+	GUICtrlSetState($add_time_entry_favourites_add_button, 				$state)
+	GUICtrlSetState($add_time_entry_favourites_delete_button, 			$state)
+	GUICtrlSetState($add_time_entry_project_listview, 					$state)
+	GUICtrlSetState($add_time_entry_project_filters_list, 				$state)
+	GUICtrlSetState($add_time_entry_project_filters_add_button, 		$state)
+	GUICtrlSetState($add_time_entry_project_filters_delete_button, 		$state)
+	GUICtrlSetState($add_time_entry_project_filters_enable_checkbox, 	$state)
+	GUICtrlSetState($add_time_entry_task_listview, 						$state)
+	GUICtrlSetState($add_time_entry_task_filters_list, 					$state)
+	GUICtrlSetState($add_time_entry_task_filters_add_button, 			$state)
+	GUICtrlSetState($add_time_entry_task_filters_delete_button, 		$state)
+	GUICtrlSetState($add_time_entry_task_filters_enable_checkbox, 		$state)
+	GUICtrlSetState($add_time_entry_notes_input,				 		$state)
+	GUICtrlSetState($add_time_entry_hour_input_radio,			 		$state)
+	GUICtrlSetState($add_time_entry_hour_input,					 		$state)
+	GUICtrlSetState($add_time_entry_half_hour_radio,					$state)
+	GUICtrlSetState($add_time_entry_one_hour_radio,						$state)
+	GUICtrlSetState($add_time_entry_one_half_hour_radio,				$state)
+	GUICtrlSetState($add_time_entry_two_hour_radio,						$state)
+	GUICtrlSetState($add_time_entry_two_half_hour_radio,				$state)
+	GUICtrlSetState($add_time_entry_three_hour_radio,					$state)
+	GUICtrlSetState($add_time_entry_three_half_hour_radio,				$state)
+	GUICtrlSetState($add_time_entry_four_hour_radio,					$state)
+	GUICtrlSetState($add_time_entry_four_half_hour_radio,				$state)
+	GUICtrlSetState($add_time_entry_five_hour_radio,					$state)
+	GUICtrlSetState($add_time_entry_save_button,						$state)
+
+EndFunc
+
