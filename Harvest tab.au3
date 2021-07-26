@@ -11,8 +11,10 @@
 Global $update_tasks = False
 Global $project_filters_path = $app_data_dir & "\project filters.txt"
 Global $task_filters_path = $app_data_dir & "\task filters.txt"
+Global $favourites_path = $app_data_dir & "\favourites.txt"
 Global $project_assignments_loaded = False
 Global $tmp = -1
+Global $favourite[0][5]
 
 Func Harvest_tab_setup()
 
@@ -39,21 +41,22 @@ Func Harvest_tab_setup()
 	$timesheet_this_week_button = 												GUICtrlCreateImageButton("week.ico", 250, 90, 36, "View this week", $GUI_DOCKALL)
 	$timesheet_refresh_button = 												GUICtrlCreateImageButton("refresh.ico", 290, 90, 36, "Get your Harvest times", $GUI_DOCKALL)
 	$timesheet_add_button = 													GUICtrlCreateImageButton("add.ico", 330, 90, 36, "Add a new Time Entry", $GUI_DOCKALL)
-	$timesheet_delete_button = 													GUICtrlCreateImageButton("delete.ico", 370, 90, 36, "Delete the selected Time Entry", $GUI_DOCKALL)
-	$timesheet_week_total_label = 												GUICtrlCreateLabelEx("Week Total : 0 hrs", 635, 110, 400, 20, "", $GUI_DOCKRIGHT + $GUI_DOCKWIDTH + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
+	$timesheet_edit_button = 													GUICtrlCreateImageButton("edit.ico", 370, 90, 36, "Edit the selected Time Entry")
+	$timesheet_delete_button = 													GUICtrlCreateImageButton("delete.ico", 410, 90, 36, "Delete the selected Time Entry", $GUI_DOCKALL)
+	$timesheet_week_total_label = 												GUICtrlCreateLabelEx("Week Total = 0:00", 685, 110, 400, 20, "", $GUI_DOCKRIGHT + $GUI_DOCKWIDTH + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 
 
 
 	$timesheet_listview = 														GUICtrlCreateListViewEx(30, 130, 760, 500, $GUI_DOCKBORDERS, "Project", 240, "Task", 160, "Notes", 260, "Hours", 90, "ID", 0)
+	_GUICtrlListView_JustifyColumn($timesheet_listview, 3, 1)
 	_GUICtrlListView_EnableGroupView($timesheet_listview)
-	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 1, "Monday")
-	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 2, "Tuesday")
-	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 3, "Wednesday")
-	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 4, "Thursday")
-	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 5, "Friday")
-	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 6, "Saturday")
-	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 7, "Sunday")
-;	$timesheet_edit_button = 													GUICtrlCreateImageButton("edit.ico", 150, 80, 36, "Edit the selected Time Entry")
+	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 1, "Mon", 2)
+	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 2, "Tue", 2)
+	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 3, "Wed", 2)
+	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 4, "Thu", 2)
+	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 5, "Fri", 2)
+	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 6, "Sat", 2)
+	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 7, "Sun", 2)
 ;	$timesheet_tmp_button = 													GUICtrlCreateImageButton("edit.ico", 190, 80, 36, "Edit the selected Time Entry")
 
 EndFunc
@@ -62,8 +65,19 @@ Func Harvest_tab_child_gui_setup()
 
 	$add_time_entry_gui = 														ChildGUICreate($app_name & " - Add Time Entry", 640, 640, $main_gui)
 
-	GUICtrlCreateGroupEx ("Project", 5, 5, 630, 260)
-	$add_time_entry_project_listview = 											GUICtrlCreateListViewEx(10, 25, 400, 235, $GUI_DOCKBORDERS, "Name", 600, "ID", 0)
+	GUICtrlCreateGroupEx ("Favourites", 5, 5, 630, 60, "", $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH)
+	$add_time_entry_favourites_combo = 											GUICtrlCreateComboEx(10, 25, 500, 20, "", $GUI_DOCKALL)
+
+	Global $favourite[0][5]	; clear the array
+	_FileReadToArray($favourites_path, $favourite, 0, chr(29))
+
+	for $i = 0 to (UBound($favourite) - 1)
+
+		_GUICtrlComboBox_AddString($add_time_entry_favourites_combo, $favourite[$i][0])
+	Next
+
+	GUICtrlCreateGroupEx ("Project", 5, 65, 630, 200)
+	$add_time_entry_project_listview = 											GUICtrlCreateListViewEx(10, 85, 400, 175, $GUI_DOCKBORDERS, "Name", 600, "ID", 0)
 	GUICtrlCreateGroupEx ("Task", 5, 275, 630, 200, "", $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT)
 	$add_time_entry_task_listview = 											GUICtrlCreateListViewEx(10, 295, 400, 170, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT, "Name", 600, "ID", 0)
 	GUICtrlCreateGroupEx ("Notes", 5, 485, 630, 50, "", $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKHEIGHT)
@@ -83,8 +97,8 @@ Func Harvest_tab_child_gui_setup()
 	$add_time_entry_save_button = 												GUICtrlCreateImageButton("save.ico", 10, 640 - 70, 36, "Save this new Time Entry", $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 	;$add_time_entry_cancel_button = 											GUICtrlCreateImageButton("cancel.ico", 50, 640 - 70, 36, "Cancel this Time Entry")
 
-	GUICtrlCreateGroupEx ("Filters", 420, 20, 200, 245, "", $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH)
-	$add_time_entry_project_filters_list = 										GUICtrlCreateListEx(425, 40, 180, 170, "", $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH)
+	GUICtrlCreateGroupEx ("Filters", 420, 80, 200, 185, "", $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH)
+	$add_time_entry_project_filters_list = 										GUICtrlCreateListEx(425, 100, 180, 110, "", $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH)
 	$add_time_entry_project_filters_add_button = 								GUICtrlCreateImageButton("add.ico", 425, 220, 36, "Add a new Project Filter", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 	$add_time_entry_project_filters_delete_button = 							GUICtrlCreateImageButton("delete.ico", 465, 220, 36, "Delete the selected Project Filter", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 	$add_time_entry_project_filters_enable_checkbox = 							GUICtrlCreateCheckboxEx("Enable filters", 505, 220, 100, 20, True, "", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
@@ -93,6 +107,9 @@ Func Harvest_tab_child_gui_setup()
 	$add_time_entry_task_filters_add_button = 									GUICtrlCreateImageButton("add.ico", 425, 430, 36, "Add a new Favourite Task", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 	$add_time_entry_task_filters_delete_button = 								GUICtrlCreateImageButton("delete.ico", 465, 430, 36, "Delete the selected Favourite Task", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 	$add_time_entry_task_filters_enable_checkbox = 								GUICtrlCreateCheckboxEx("Enable filters", 505, 430, 100, 20, True, "", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+
+	$add_time_entry_favourites_add_button = 									GUICtrlCreateImageButton("add.ico", 520, 20, 36, "Add a new Favourite with the selections below", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+	$add_time_entry_favourites_delete_button = 									GUICtrlCreateImageButton("delete.ico", 560, 20, 36, "Delete the selected Favourite", $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 
 
 	$add_time_entry_status_input = 												GUICtrlCreateStatusInput("", 10, 640 - 25, 640 - 20, 20)
@@ -236,13 +253,14 @@ Func Harvest_tab_event_handler($msg)
 
 				_GUICtrlListView_EndUpdate($add_time_entry_project_listview)
 				_GUICtrlListView_SetItemSelected($add_time_entry_project_listview, 0, true, true)
-				GUICtrlSetState($add_time_entry_project_listview, $GUI_FOCUS)
 
 				FilterProject()
 
 				$project_assignments_loaded = True
 				$update_tasks = True
 			EndIf
+
+			GUICtrlSetState($add_time_entry_favourites_combo, $GUI_FOCUS)
 
 ;		Case $timesheet_tmp_button
 
@@ -267,6 +285,50 @@ Func Harvest_tab_event_handler($msg)
 			_GUICtrlListView_SetItemSelected($timesheet_listview, GUICtrlListView_GetTopMostIndex($timesheet_listview), true, true)
 			GUICtrlSetState($timesheet_listview, $GUI_FOCUS)
 
+
+		Case $add_time_entry_favourites_add_button
+
+			$result = InputBox($app_name, "Enter the name to give this favourite", "", "", 240, 140, Default, Default, 0, $main_gui)
+
+			if StringLen($result) > 0 Then
+
+				Local $selected_project_name = _GUICtrlListView_GetItemText($add_time_entry_project_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_project_listview)), 0)
+				Local $selected_task_name = _GUICtrlListView_GetItemText($add_time_entry_task_listview, Number(_GUICtrlListView_GetSelectedIndices($add_time_entry_task_listview)), 0)
+				Local $notes = GUICtrlRead($add_time_entry_notes_input)
+				Local $hours = 0
+
+				if GUICtrlRead($add_time_entry_hour_input_radio) = $GUI_CHECKED Then $hours = GUICtrlRead($add_time_entry_hour_input)
+				if GUICtrlRead($add_time_entry_half_hour_radio) = $GUI_CHECKED Then $hours = "0.5"
+				if GUICtrlRead($add_time_entry_one_hour_radio) = $GUI_CHECKED Then $hours = "1.0"
+				if GUICtrlRead($add_time_entry_one_half_hour_radio) = $GUI_CHECKED Then $hours = "1.5"
+				if GUICtrlRead($add_time_entry_two_hour_radio) = $GUI_CHECKED Then $hours = "2.0"
+				if GUICtrlRead($add_time_entry_two_half_hour_radio) = $GUI_CHECKED Then $hours = "2.5"
+				if GUICtrlRead($add_time_entry_three_hour_radio) = $GUI_CHECKED Then $hours = "3.0"
+				if GUICtrlRead($add_time_entry_three_half_hour_radio) = $GUI_CHECKED Then $hours = "3.5"
+				if GUICtrlRead($add_time_entry_four_hour_radio) = $GUI_CHECKED Then $hours = "4.0"
+				if GUICtrlRead($add_time_entry_four_half_hour_radio) = $GUI_CHECKED Then $hours = "4.5"
+				if GUICtrlRead($add_time_entry_five_hour_radio) = $GUI_CHECKED Then $hours = "5.0"
+
+				_GUICtrlComboBox_AddString($add_time_entry_favourites_combo, $result)
+				_ArrayAdd($favourite, $result & Chr(29) & $selected_project_name & Chr(29) & $selected_task_name & Chr(29) & $notes & Chr(29) & $hours, 0, Chr(29))
+				FileDelete($favourites_path)
+				_FileWriteFromArray($favourites_path, $favourite, Default, Default, Chr(29))
+
+			EndIf
+
+		Case $add_time_entry_favourites_delete_button
+
+			$result = _ArraySearch($favourite, GUICtrlRead($add_time_entry_favourites_combo), 0, 0, 1, 0, 1, 0)
+
+			if $result > -1 Then
+
+				_ArrayDelete($favourite, $result)
+				FileDelete($favourites_path)
+				_FileWriteFromArray($favourites_path, $favourite, Default, Default, Chr(29))
+
+			EndIf
+
+			_GUICtrlComboBox_DeleteString($add_time_entry_favourites_combo, _GUICtrlComboBox_GetCurSel($add_time_entry_favourites_combo))
 
 		Case $add_time_entry_save_button
 
@@ -296,7 +358,7 @@ Func Harvest_tab_event_handler($msg)
 			Local $notes = GUICtrlRead($add_time_entry_notes_input)
 
 			GUICtrlStatusInput_SetText($add_time_entry_status_input, "Please Wait. Saving the time entry ...")
-			Local $iPID = Run('curl -k "https://api.harvestapp.com/v2/time_entries?project_id=' & $selected_project_id & '&task_id=' & $selected_task_id & '&spent_date=' & @YEAR & '-' & $time_entry_date_part[2] & '-' & $time_entry_date_part[1] & '&hours=' & $hours & '&notes=' & $notes & '" -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X POST -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+			Local $iPID = Run('curl -k "https://api.harvestapp.com/v2/time_entries?project_id=' & $selected_project_id & '&task_id=' & $selected_task_id & '&spent_date=' & @YEAR & '-' & $time_entry_date_part[2] & '-' & $time_entry_date_part[1] & '&hours=' & HourAndMinutesToHours($hours) & '&notes=' & _URIEncode($notes) & '" -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)" -X POST -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
 			ProcessWaitClose($iPID)
 			Local $json = StdoutRead($iPID)
 			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $json = ' & $json & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
@@ -310,14 +372,14 @@ Func Harvest_tab_event_handler($msg)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_project_name, 0)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_task_name, 1)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $notes, 2)
-				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $hours, 3)
+				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), HoursToHourAndMinutes($hours), 3)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $id, 4)
 			Else
 
 				Local $index = _GUICtrlListView_AddItem($timesheet_listview, $selected_project_name)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $selected_task_name, 1)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $notes, 2)
-				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $hours, 3)
+				_GUICtrlListView_AddSubItem($timesheet_listview, $index, HoursToHourAndMinutes($hours), 3)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $id, 4)
 				_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, _GUICtrlListView_GetItemGroupID($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))))
 			EndIf
@@ -502,6 +564,23 @@ Func Harvest_tab_WM_COMMAND_handler($hWndFrom, $iCode)
 			EndSwitch
 
 
+		Case GUICtrlGetHandle($add_time_entry_favourites_combo)
+
+			Switch $iCode
+
+                Case $CBN_SELENDOK ; Sent when the user cancels the selection in a list box
+
+					Local $index = _GUICtrlComboBox_GetCurSel($add_time_entry_favourites_combo)
+					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $index = ' & $index & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+					_GUICtrlListView_SetItemSelected($add_time_entry_project_listview, _GUICtrlListView_FindText($add_time_entry_project_listview, $favourite[$index][1], -1, False), True, true)
+					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $favourite[$index][1] = ' & $favourite[$index][1] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+					_GUICtrlListView_SetItemSelected($add_time_entry_task_listview, _GUICtrlListView_FindText($add_time_entry_task_listview, $favourite[$index][2], -1, False), True, true)
+					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $favourite[$index][2] = ' & $favourite[$index][2] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+					GUICtrlSetData($add_time_entry_notes_input, $favourite[$index][3])
+					ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $favourite[$index][3] = ' & $favourite[$index][3] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+
+			EndSwitch
+
 
 
         Case GUICtrlGetHandle($add_time_entry_project_filters_enable_checkbox)
@@ -664,8 +743,6 @@ Func FilterTask()
 
 	if UBound($task_name_arr) > 0 Then
 
-		;_ArrayDisplay($task_name_arr)
-
 		;$rr = $task_name_arr[UBound($task_name_arr) - 1]
 		;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $rr = ' & $rr & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
@@ -739,7 +816,7 @@ Func UpdateTotalHours()
 	for $i = 0 to (_GUICtrlListView_GetItemCount($timesheet_listview) - 1)
 
 		Local $group_id = _GUICtrlListView_GetItemGroupID($timesheet_listview, $i)
-		Local $hours = _GUICtrlListView_GetItemText($timesheet_listview, $i, 3)
+		Local $hours = HourAndMinutesToHours(_GUICtrlListView_GetItemText($timesheet_listview, $i, 3))
 		$hours_day_of_week[$group_id - 1] = $hours_day_of_week[$group_id - 1] + $hours
 		$week_total_hours = $week_total_hours + $hours
 	Next
@@ -747,10 +824,10 @@ Func UpdateTotalHours()
 	for $i = 0 to 6
 
 		Local $group_info = _GUICtrlListView_GetGroupInfo($timesheet_listview, $i + 1)
-		_GUICtrlListView_SetGroupInfo($timesheet_listview, $i + 1, StringRegExpReplace($group_info[0], "[0-9]* hrs", $hours_day_of_week[$i] & " hrs"))
+		_GUICtrlListView_SetGroupInfo($timesheet_listview, $i + 1, StringRegExpReplace($group_info[0], " = .*", " = " & HoursToHourAndMinutes($hours_day_of_week[$i])))
 	Next
 
-	GUICtrlSetData($timesheet_week_total_label, "Week Total : " & $week_total_hours & " hrs")
+	GUICtrlSetData($timesheet_week_total_label, "Week Total = " & HoursToHourAndMinutes($week_total_hours))
 
 EndFunc
 
@@ -794,7 +871,7 @@ Func RefreshTimesheet($week_start_date)
 			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $project = ' & $project & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $task, 1)
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $notes, 2)
-			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $hours, 3)
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, HoursToHourAndMinutes($hours), 3)
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $id, 4)
 			_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, $spent_date_day_to_week_index - 1)
 			$times_exist_for_day[$spent_date_day_to_week_index - 2] = True
@@ -818,21 +895,21 @@ Func RefreshTimesheet($week_start_date)
 	Next
 
 	$date_part = StringSplit(_DateAdd('d', 0, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 1, "Monday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[0] & " hrs)")
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 1, "Mon " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[0]), 2)
 	$date_part = StringSplit(_DateAdd('d', 1, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 2, "Tuesday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[1] & " hrs)")
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 2, "Tue " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[1]), 2)
 	$date_part = StringSplit(_DateAdd('d', 2, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 3, "Wednesday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[2] & " hrs)")
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 3, "Wed " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[2]), 2)
 	$date_part = StringSplit(_DateAdd('d', 3, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 4, "Thursday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[3] & " hrs)")
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 4, "Thu " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[3]), 2)
 	$date_part = StringSplit(_DateAdd('d', 4, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 5, "Friday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[4] & " hrs)")
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 5, "Fri " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[4]), 2)
 	$date_part = StringSplit(_DateAdd('d', 5, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 6, "Saturday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[5] & " hrs)")
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 6, "Sat " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[5]), 2)
 	$date_part = StringSplit(_DateAdd('d', 6, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 7, "Sunday " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " (" & $hours_day_of_week[6] & " hrs)")
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 7, "Sun " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[6]), 2)
 
-	GUICtrlSetData($timesheet_week_total_label, "Week Total : " & ($hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6]) & " hrs")
+	GUICtrlSetData($timesheet_week_total_label, "Week Total = " & HoursToHourAndMinutes($hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6]))
 
 	_GUICtrlListView_EndUpdate($timesheet_listview)
 

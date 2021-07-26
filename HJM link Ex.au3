@@ -77,6 +77,9 @@ Global $timesheet_week_combo
 Global $timesheet_this_week_button
 
 Global $add_time_entry_gui
+Global $add_time_entry_favourites_combo
+Global $add_time_entry_favourites_add_button
+Global $add_time_entry_favourites_delete_button
 Global $add_time_entry_project_listview
 Global $add_time_entry_project_filters_list
 Global $add_time_entry_project_filters_add_button
@@ -396,7 +399,7 @@ EndFunc
 
 Func GUICtrlCreateComboEx($left, $top, $width, $height, $tooltip_text = "", $resizing = -1, $hide = False)
 
-	local $ctrl = GUICtrlCreateCombo("", $left, $top, $width, $height, $CBS_DROPDOWNLIST)
+	local $ctrl = GUICtrlCreateCombo("", $left, $top, $width, $height, BitOR($CBS_DROPDOWNLIST, $CBS_SORT))
 
 	if StringLen($tooltip_text) > 0 Then
 
@@ -898,4 +901,53 @@ Func GetLastMondayDate($format = "")
 
 	return _Date_Time_Convert($last_monday_date, "yyyy/MM/dd", $format)
 
+EndFunc
+
+Func _URIEncode($sData)
+    ; Prog@ndy
+    Local $aData = StringSplit(BinaryToString(StringToBinary($sData,4),1),"")
+    Local $nChar
+    $sData=""
+    For $i = 1 To $aData[0]
+        ; ConsoleWrite($aData[$i] & @CRLF)
+        $nChar = Asc($aData[$i])
+        Switch $nChar
+            Case 45, 46, 48 To 57, 65 To 90, 95, 97 To 122, 126
+                $sData &= $aData[$i]
+            Case 32
+                $sData &= "+"
+            Case Else
+                $sData &= "%" & Hex($nChar,2)
+        EndSwitch
+    Next
+    Return $sData
+EndFunc
+
+Func _URIDecode($sData)
+    ; Prog@ndy
+    Local $aData = StringSplit(StringReplace($sData,"+"," ",0,1),"%")
+    $sData = ""
+    For $i = 2 To $aData[0]
+        $aData[1] &= Chr(Dec(StringLeft($aData[$i],2))) & StringTrimLeft($aData[$i],2)
+    Next
+    Return BinaryToString(StringToBinary($aData[1],1),4)
+EndFunc
+
+Func HourAndMinutesToHours($hours_and_minutes)
+
+	$time_part = StringSplit($hours_and_minutes, ":", 1)
+
+	if $time_part[0] <> 2 Then Return $hours_and_minutes
+
+	Return $time_part[1] + ($time_part[2] / 60)
+EndFunc
+
+
+Func HoursToHourAndMinutes($hours)
+
+	$time_part = StringSplit($hours, ":", 1)
+
+	if $time_part[0] = 2 Then Return $hours
+
+	Return Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60))
 EndFunc
