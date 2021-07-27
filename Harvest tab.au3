@@ -39,15 +39,15 @@ Func Harvest_tab_setup()
 	_GUICtrlComboBox_SelectString($timesheet_week_combo, GetLastMondayDate("dd/MM/yyyy"))
 
 	$timesheet_this_week_button = 												GUICtrlCreateImageButton("week.ico", 250, 90, 36, "View this week", $GUI_DOCKALL)
-	$timesheet_refresh_button = 												GUICtrlCreateImageButton("refresh.ico", 290, 90, 36, "Get your Harvest times", $GUI_DOCKALL)
-	$timesheet_add_button = 													GUICtrlCreateImageButton("add.ico", 330, 90, 36, "Add a new Time Entry", $GUI_DOCKALL)
-	$timesheet_edit_button = 													GUICtrlCreateImageButton("edit.ico", 370, 90, 36, "Edit the selected Time Entry")
-	$timesheet_delete_button = 													GUICtrlCreateImageButton("delete.ico", 410, 90, 36, "Delete the selected Time Entry", $GUI_DOCKALL)
+	$timesheet_refresh_button = 												GUICtrlCreateImageButton("refresh.ico", 290, 90, 36, "Get your Harvest times (ALT+R)", $GUI_DOCKALL, False, "&R")
+	$timesheet_add_button = 													GUICtrlCreateImageButton("add.ico", 330, 90, 36, "Add a new Time Entry (ALT+A)", $GUI_DOCKALL, False, "&A")
+	$timesheet_edit_button = 													GUICtrlCreateImageButton("edit.ico", 370, 90, 36, "Edit the selected Time Entry (ALT+E)", -1, False, "&E")
+	$timesheet_delete_button = 													GUICtrlCreateImageButton("delete.ico", 410, 90, 36, "Delete the selected Time Entry (ALT+D)", $GUI_DOCKALL, False, "&D")
 	$timesheet_week_total_label = 												GUICtrlCreateLabelEx("Week Total = 0:00", 685, 110, 400, 20, "", $GUI_DOCKRIGHT + $GUI_DOCKWIDTH + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 
 
 
-	$timesheet_listview = 														GUICtrlCreateListViewEx(30, 130, 760, 500, $GUI_DOCKBORDERS, "Project", 240, "Task", 160, "Notes", 260, "Hours", 90, "ID", 0)
+	$timesheet_listview = 														GUICtrlCreateListViewEx(30, 130, 775, 500, $GUI_DOCKBORDERS, "Project", 240, "Task", 160, "Notes", 260, "Hours", 90, "ID", 0)
 	_GUICtrlListView_JustifyColumn($timesheet_listview, 3, 1)
 	_GUICtrlListView_EnableGroupView($timesheet_listview)
 	_GUICtrlListView_InsertGroup($timesheet_listview, -1, 1, "Mon", 2)
@@ -70,6 +70,7 @@ Func Harvest_tab_child_gui_setup()
 
 	Global $favourite[0][5]	; clear the array
 	_FileReadToArray($favourites_path, $favourite, 0, chr(29))
+	_ArraySort($favourite)
 
 	for $i = 0 to (UBound($favourite) - 1)
 
@@ -329,10 +330,19 @@ Func Harvest_tab_event_handler($msg)
 				if GUICtrlRead($add_time_entry_four_half_hour_radio) = $GUI_CHECKED Then $hours = "4.5"
 				if GUICtrlRead($add_time_entry_five_hour_radio) = $GUI_CHECKED Then $hours = "5.0"
 
-				_GUICtrlComboBox_AddString($add_time_entry_favourites_combo, $result)
 				_ArrayAdd($favourite, $result & Chr(29) & $selected_project_name & Chr(29) & $selected_task_name & Chr(29) & $notes & Chr(29) & $hours, 0, Chr(29))
+				_ArraySort($favourite)
 				FileDelete($favourites_path)
 				_FileWriteFromArray($favourites_path, $favourite, Default, Default, Chr(29))
+				_GUICtrlComboBox_ResetContent($add_time_entry_favourites_combo)
+
+				for $i = 0 to (UBound($favourite) - 1)
+
+					_GUICtrlComboBox_AddString($add_time_entry_favourites_combo, $favourite[$i][0])
+				Next
+
+				_GUICtrlComboBox_SelectString($add_time_entry_favourites_combo, $result)
+
 
 			EndIf
 
@@ -402,14 +412,14 @@ Func Harvest_tab_event_handler($msg)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_project_name, 0)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $selected_task_name, 1)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $notes, 2)
-				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), HoursToHourAndMinutes($hours), 3)
+				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), HoursToHourAndMinutes($hours, True), 3)
 				_GUICtrlListView_SetItemText($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview)), $id, 4)
 			Else
 
 				Local $index = _GUICtrlListView_AddItem($timesheet_listview, $selected_project_name)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $selected_task_name, 1)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $notes, 2)
-				_GUICtrlListView_AddSubItem($timesheet_listview, $index, HoursToHourAndMinutes($hours), 3)
+				_GUICtrlListView_AddSubItem($timesheet_listview, $index, HoursToHourAndMinutes($hours, True), 3)
 				_GUICtrlListView_AddSubItem($timesheet_listview, $index, $id, 4)
 				_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, _GUICtrlListView_GetItemGroupID($timesheet_listview, Number(_GUICtrlListView_GetSelectedIndices($timesheet_listview))))
 			EndIf
@@ -422,6 +432,7 @@ Func Harvest_tab_event_handler($msg)
 			GUISetState(@SW_ENABLE, $main_gui)
 			GUISetState(@SW_HIDE, $current_gui)
 			$current_gui = $main_gui
+			GUICtrlSetState($timesheet_listview, $GUI_FOCUS)
 
 		Case $add_time_entry_project_filters_add_button
 
@@ -606,6 +617,8 @@ Func Harvest_tab_WM_COMMAND_handler($hWndFrom, $iCode)
 					_GUICtrlListView_SetItemSelected($add_time_entry_project_listview, _GUICtrlListView_FindText($add_time_entry_project_listview, $favourite[$index][1], -1, False), True, true)
 					_GUICtrlListView_SetItemSelected($add_time_entry_task_listview, _GUICtrlListView_FindText($add_time_entry_task_listview, $favourite[$index][2], -1, False), True, true)
 					GUICtrlSetData($add_time_entry_notes_input, $favourite[$index][3])
+					GUICtrlSetState($add_time_entry_hour_input_radio, $GUI_CHECKED)
+					GUICtrlSetData($add_time_entry_hour_input, $favourite[$index][4])
 
 			EndSwitch
 
@@ -845,10 +858,11 @@ Func UpdateTotalHours()
 	for $i = 0 to 6
 
 		Local $group_info = _GUICtrlListView_GetGroupInfo($timesheet_listview, $i + 1)
-		_GUICtrlListView_SetGroupInfo($timesheet_listview, $i + 1, StringRegExpReplace($group_info[0], " = .*", " = " & HoursToHourAndMinutes($hours_day_of_week[$i])), 2)
+		_GUICtrlListView_SetGroupInfo($timesheet_listview, $i + 1, StringRegExpReplace($group_info[0], " = .*", " = " & HoursToHourAndMinutes($hours_day_of_week[$i], True)), 2)
 	Next
 
-	GUICtrlSetData($timesheet_week_total_label, "Week Total = " & HoursToHourAndMinutes($week_total_hours))
+	GUICtrlSetData($timesheet_week_total_label, "Week Total = " & HoursToHourAndMinutes($week_total_hours, True))
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $week_total_hours = ' & $week_total_hours & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 EndFunc
 
@@ -882,12 +896,14 @@ Func RefreshTimesheet($week_start_date)
 			Local $task = Json_Get($decoded_json, '.time_entries[' & $i & '].task.name')
 			Local $notes = Json_Get($decoded_json, '.time_entries[' & $i & '].notes')
 			Local $hours = Json_Get($decoded_json, '.time_entries[' & $i & '].hours')
+			; $hours = $hours + 0.01	; Harvest is storing time to only 2 decimal places so need to add an additional 0.01 hrs convert correctly to hours and minutes
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours = ' & $hours & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 			Local $id = Json_Get($decoded_json, '.time_entries[' & $i & '].id')
 
 			Local $index = _GUICtrlListView_AddItem($timesheet_listview, $project)
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $task, 1)
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $notes, 2)
-			_GUICtrlListView_AddSubItem($timesheet_listview, $index, HoursToHourAndMinutes($hours), 3)
+			_GUICtrlListView_AddSubItem($timesheet_listview, $index, HoursToHourAndMinutes($hours + 0.01), 3)	; Adding an extra 0.01 hrs because Harvest is storing time to only 2 decimal places
 			_GUICtrlListView_AddSubItem($timesheet_listview, $index, $id, 4)
 			_GUICtrlListView_SetItemGroupID($timesheet_listview, $index, $spent_date_day_to_week_index - 1)
 			$times_exist_for_day[$spent_date_day_to_week_index - 2] = True
@@ -909,21 +925,31 @@ Func RefreshTimesheet($week_start_date)
 	Next
 
 	$date_part = StringSplit(_DateAdd('d', 0, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 1, "Mon " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[0]), 2)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 1, "Mon " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[0] + 0.01), 2)
 	$date_part = StringSplit(_DateAdd('d', 1, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 2, "Tue " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[1]), 2)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 2, "Tue " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[1] + 0.01), 2)
 	$date_part = StringSplit(_DateAdd('d', 2, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 3, "Wed " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[2]), 2)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 3, "Wed " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[2] + 0.01), 2)
 	$date_part = StringSplit(_DateAdd('d', 3, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 4, "Thu " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[3]), 2)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 4, "Thu " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[3] + 0.01), 2)
 	$date_part = StringSplit(_DateAdd('d', 4, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 5, "Fri " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[4]), 2)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 5, "Fri " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[4] + 0.01), 2)
 	$date_part = StringSplit(_DateAdd('d', 5, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 6, "Sat " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[5]), 2)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 6, "Sat " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[5] + 0.01), 2)
 	$date_part = StringSplit(_DateAdd('d', 6, $week_start_date), "/", 3)
-	_GUICtrlListView_SetGroupInfo($timesheet_listview, 7, "Sun " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[6]), 2)
+	_GUICtrlListView_SetGroupInfo($timesheet_listview, 7, "Sun " & $date_part[2] & " " & _DateToMonth($date_part[1], $DMW_SHORTNAME) & " = " & HoursToHourAndMinutes($hours_day_of_week[6] + 0.01), 2)
 
-	GUICtrlSetData($timesheet_week_total_label, "Week Total = " & HoursToHourAndMinutes($hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6]))
+	GUICtrlSetData($timesheet_week_total_label, "Week Total = " & HoursToHourAndMinutes($hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6] + 0.01, True))
+
+	$r = $hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6]
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[6] = ' & $hours_day_of_week[6] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[5] = ' & $hours_day_of_week[5] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[4] = ' & $hours_day_of_week[4] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[3] = ' & $hours_day_of_week[3] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[2] = ' & $hours_day_of_week[2] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[1] = ' & $hours_day_of_week[1] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[0] = ' & $hours_day_of_week[0] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $r = ' & $r & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 	_GUICtrlListView_EndUpdate($timesheet_listview)
 

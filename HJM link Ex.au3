@@ -401,6 +401,29 @@ EndFunc
 
 Func GUICtrlCreateComboEx($left, $top, $width, $height, $tooltip_text = "", $resizing = -1, $hide = False)
 
+	local $ctrl = GUICtrlCreateCombo("", $left, $top, $width, $height, $CBS_DROPDOWNLIST)
+
+	if StringLen($tooltip_text) > 0 Then
+
+		_GUIToolTip_AddTool($tooltip, 0, $tooltip_text, GUICtrlGetHandle(-1))
+	EndIf
+
+	if $resizing > -1 Then
+
+		GUICtrlSetResizing(-1, $resizing)
+	EndIf
+
+	if $hide = True Then
+
+		GUICtrlSetState(-1, $GUI_HIDE)
+	EndIf
+
+	Return $ctrl
+
+EndFunc
+
+Func GUICtrlCreateComboSortedEx($left, $top, $width, $height, $tooltip_text = "", $resizing = -1, $hide = False)
+
 	local $ctrl = GUICtrlCreateCombo("", $left, $top, $width, $height, BitOR($CBS_DROPDOWNLIST, $CBS_SORT))
 
 	if StringLen($tooltip_text) > 0 Then
@@ -445,9 +468,9 @@ Func GUICtrlCreateButtonEx($text, $left, $top, $width, $height, $tooltip_text = 
 
 EndFunc
 
-Func GUICtrlCreateImageButton($ico_filename, $left, $top, $width_height, $tooltip_text, $resizing = -1, $hide = False)
+Func GUICtrlCreateImageButton($ico_filename, $left, $top, $width_height, $tooltip_text, $resizing = -1, $hide = False, $mnemonic = "")
 
-	local $ctrl = GUICtrlCreateButton("", $left, $top, $width_height, $width_height, $BS_ICON, $WS_EX_DLGMODALFRAME)
+	local $ctrl = GUICtrlCreateButton($mnemonic, $left, $top, $width_height, $width_height, $BS_ICON, $WS_EX_DLGMODALFRAME)
 	GUICtrlSetImage(-1, @ScriptDir & "\" & $ico_filename)
 	_GUIToolTip_AddTool($tooltip, 0, $tooltip_text, GUICtrlGetHandle(-1))
 
@@ -935,21 +958,33 @@ Func _URIDecode($sData)
     Return BinaryToString(StringToBinary($aData[1],1),4)
 EndFunc
 
-Func HourAndMinutesToHours($hours_and_minutes)
+Func HourAndMinutesToHours($hours_and_minutes, $round_to_two_decimal_places = False)
 
 	$time_part = StringSplit($hours_and_minutes, ":", 1)
 
 	if $time_part[0] <> 2 Then Return $hours_and_minutes
 
-	Return $time_part[1] + ($time_part[2] / 60)
+	Local $hours = $time_part[1] + ($time_part[2] / 60)
+
+	if $round_to_two_decimal_places = False then Return $hours
+
+	$hours = RoundDown($hours, 2) + 0.01
+	Return $hours
 EndFunc
 
 
-Func HoursToHourAndMinutes($hours)
+Func HoursToHourAndMinutes($hours, $round_to_two_decimal_places = False)
 
 	$time_part = StringSplit($hours, ":", 1)
 
 	if $time_part[0] = 2 Then Return $hours
 
+	if $round_to_two_decimal_places = True Then $hours = RoundDown($hours, 2) + 0.01
+
+	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60)) = ' & Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60)) & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 	Return Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60))
+EndFunc
+
+Func RoundDown($nVar, $iCount)
+    Return Round((Int($nVar * (10 ^ $iCount))) / (10 ^ $iCount), $iCount)
 EndFunc

@@ -12,6 +12,25 @@
 #Include "Metronome tab.au3"
 
 
+;$r = "0:20"
+
+;$r = HourAndMinutesToHours($r)
+;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $r = ' & $r & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;Exit
+
+;$r = "0:20"
+
+;$r = HourAndMinutesToHours($r)
+;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $r = ' & $r & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;$r = HoursToHourAndMinutes($r)
+;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $r = ' & $r & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;$r = HourAndMinutesToHours($r)
+;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $r = ' & $r & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;$r = HoursToHourAndMinutes($r)
+;ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $r = ' & $r & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+
+;Exit
+
 HJM_Link_Startup()
 
 ; Main gui
