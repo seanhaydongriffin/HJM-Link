@@ -12,6 +12,27 @@
 #Include "Metronome tab.au3"
 
 
+;$t = "1w"
+
+;$x = StringSplit($t, " ")
+;Local $estimate_seconds = 0
+
+;for $i = 1 to $x[0]
+
+;	$arr = StringRegExp($x[$i], "(\d)w", 1)
+
+;	if @error = 0 Then
+
+;		$estimate_seconds = $estimate_seconds + (1 * 5 * 8 * 60 * 60)
+;	EndIf
+;Next
+
+
+;		ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $estimate_seconds = ' & $estimate_seconds & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+
+;Exit
+
+
 ;$r = "0:20"
 
 ;$r = HourAndMinutesToHours($r)

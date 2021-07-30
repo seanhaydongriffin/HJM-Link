@@ -63,6 +63,10 @@ Global $harvest_accound_id_label
 Global $harvest_account_id_input
 Global $harvest_access_token_label
 Global $harvest_access_token_input
+Global $jira_username_label
+Global $jira_username_input
+Global $jira_api_token_label
+Global $jira_api_token_input
 Global $metronome_email_input
 Global $metronome_password_input
 
@@ -74,6 +78,7 @@ Global $timesheet_refresh_button
 Global $timesheet_add_button
 Global $timesheet_edit_button
 Global $timesheet_delete_button
+Global $timesheet_sync_to_jira_checkbox
 Global $timesheet_tmp_button
 Global $timesheet_week_combo
 Global $timesheet_this_week_button
@@ -112,7 +117,9 @@ Global $add_time_entry_status_input
 
 
 ; Jira tab
-
+Global $jira_tmp_button
+Global $jira_tmp2_button
+Global $jira_tmp3_button
 
 ; Metronome tab
 
@@ -907,6 +914,23 @@ Func GUICtrlListView_GetTopMostIndex($listview)
 	return $top_most_item_index
 EndFunc
 
+Func GUICtrlListView_GetIndexOrdered($listview)
+
+	Local $arr[_GUICtrlListView_GetItemCount($listview)][2]
+
+	for $i = 0 to (_GUICtrlListView_GetItemCount($listview) - 1)
+
+		Local $y_pos = _GUICtrlListView_GetItemPositionY($timesheet_listview, $i)
+		$arr[$i][0] = $y_pos
+		$arr[$i][1] = $i
+	Next
+
+	_ArraySort($arr)
+	_ArrayColDelete($arr, 0, True)
+
+	return $arr
+EndFunc
+
 Func GetLastMondayDate($format = "")
 
 	Local $days_from_today
@@ -987,4 +1011,22 @@ EndFunc
 
 Func RoundDown($nVar, $iCount)
     Return Round((Int($nVar * (10 ^ $iCount))) / (10 ^ $iCount), $iCount)
+EndFunc
+
+Func JiraWeekDayHourToSeconds($jira_week_day_hour_time)
+
+	$x = StringSplit($jira_week_day_hour_time, " ")
+	Local $seconds = 0
+
+	for $i = 1 to $x[0]
+
+		$arr = StringRegExp($x[$i], "(\d)w", 1)
+
+		if @error = 0 Then
+
+			$seconds = $seconds + (1 * 5 * 8 * 60 * 60)
+		EndIf
+	Next
+
+	Return $seconds
 EndFunc
