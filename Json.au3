@@ -446,6 +446,37 @@ Func Json_Get(ByRef $Var, $Notation)
 	Return SetError(2, 0, "") ; invalid notation
 EndFunc   ;==>Json_Get
 
+; Both dot notation and square bracket notation can be supported
+Func Json_Delete(ByRef $Var, $Notation)
+	Local $Match = StringRegExp($Notation, "(^\[([^\]]+)\])|(^\.([^\.\[]+))", 3)
+	If IsArray($Match) Then
+		Local $Index
+		If UBound($Match) = 4 Then
+			$Index = String(Json_Decode($Match[3])) ; only string using dot notation
+			$Notation = StringTrimLeft($Notation, StringLen($Match[2]))
+		Else
+			$Index = Json_Decode($Match[1])
+			$Notation = StringTrimLeft($Notation, StringLen($Match[0]))
+		EndIf
+
+		Local $yy = Json_IsObject($Var)
+
+		Local $Item
+		If IsString($Index) And Json_IsObject($Var) And Json_ObjExists($Var, $Index) Then
+			$Item = Json_ObjDelete($Var, $Index)
+		ElseIf IsInt($Index) And IsArray($Var) And UBound($Var, 0) = 1 And $Index >= 0 And $Index < UBound($Var) Then
+			$Item = $Var[$Index]
+		Else
+			Return SetError(1, 0, "") ; no specific object
+		EndIf
+
+		If Not $Notation Then Return $Item
+		Local $Ret = Json_Delete($Item, $Notation)
+		Return SetError(@error, 0, $Ret)
+	EndIf
+	Return SetError(2, 0, "") ; invalid notation
+EndFunc   ;==>Json_Get
+
 ; List all JSON keys and their value to the Console
 Func Json_Dump($Json, $InitTokenCount = 1000)
 	Static $Jsmn_Init = __Jsmn_RuntimeLoader("jsmn_init"), $Jsmn_Parse = __Jsmn_RuntimeLoader("jsmn_parse")
