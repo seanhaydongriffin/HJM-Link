@@ -1005,7 +1005,7 @@ Func HoursToHourAndMinutes($hours, $round_to_two_decimal_places = False)
 
 	if $round_to_two_decimal_places = True Then $hours = RoundDown($hours, 2) + 0.01
 
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60)) = ' & Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60)) & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60)) = ' & Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60)) & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 	Return Int($hours) & ":" & StringFormat("%02d", (($hours - Int($hours)) * 60))
 EndFunc
 

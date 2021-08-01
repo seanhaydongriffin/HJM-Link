@@ -898,7 +898,7 @@ Func RefreshTimesheet($week_start_date)
 			Local $notes = Json_Get($decoded_json, '.time_entries[' & $i & '].notes')
 			Local $hours = Json_Get($decoded_json, '.time_entries[' & $i & '].hours')
 			; $hours = $hours + 0.01	; Harvest is storing time to only 2 decimal places so need to add an additional 0.01 hrs convert correctly to hours and minutes
-			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours = ' & $hours & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours = ' & $hours & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 			Local $id = Json_Get($decoded_json, '.time_entries[' & $i & '].id')
 
 			Local $index = _GUICtrlListView_AddItem($timesheet_listview, $project)
@@ -943,14 +943,14 @@ Func RefreshTimesheet($week_start_date)
 	GUICtrlSetData($timesheet_week_total_label, "Week Total = " & HoursToHourAndMinutes($hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6] + 0.01, True))
 
 	$r = $hours_day_of_week[0] + $hours_day_of_week[1] + $hours_day_of_week[2] + $hours_day_of_week[3] + $hours_day_of_week[4] + $hours_day_of_week[5] + $hours_day_of_week[6]
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[6] = ' & $hours_day_of_week[6] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[5] = ' & $hours_day_of_week[5] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[4] = ' & $hours_day_of_week[4] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[3] = ' & $hours_day_of_week[3] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[2] = ' & $hours_day_of_week[2] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[1] = ' & $hours_day_of_week[1] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[0] = ' & $hours_day_of_week[0] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
-	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $r = ' & $r & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[6] = ' & $hours_day_of_week[6] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[5] = ' & $hours_day_of_week[5] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[4] = ' & $hours_day_of_week[4] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[3] = ' & $hours_day_of_week[3] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[2] = ' & $hours_day_of_week[2] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[1] = ' & $hours_day_of_week[1] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $hours_day_of_week[0] = ' & $hours_day_of_week[0] & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
+;	ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $r = ' & $r & @CRLF & '>Error code: ' & @error & @CRLF) ;### Debug Console
 
 	_GUICtrlListView_EndUpdate($timesheet_listview)
 
@@ -1184,6 +1184,8 @@ Func RefreshTimesheet($week_start_date)
 							Local $json = StdoutRead($iPID)
 							Local $decoded_json = Json_Decode($json)
 
+							Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.timetracking.timeSpentSeconds', Number($ticket_time_spent_seconds) + $worklog_time_spent_seconds)
+
 							if StringLen($jira_ticket_worklogs[$jira_ticket_index]) > 0 Then $jira_ticket_worklogs[$jira_ticket_index] = $jira_ticket_worklogs[$jira_ticket_index] & chr(30)
 
 							$jira_ticket_worklogs[$jira_ticket_index] = $jira_ticket_worklogs[$jira_ticket_index] & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & chr(29) & $note & chr(29) & Json_Get($decoded_json, '.id') & chr(29) & $worklog_time_spent_seconds
@@ -1241,6 +1243,7 @@ Func RefreshTimesheet($week_start_date)
 				Local $worklog_id = $worklog_part_arr[2]
 				Local $worklog_time_spent_seconds = $worklog_part_arr[3]
 				Local $total_worklogs = Json_Get($jira_ticket_decoded_json[$i], '.fields.worklog.total')
+				Local $worklog_found = False
 
 				for $worklog_index = ($total_worklogs - 1) to 0 step -1
 
@@ -1249,6 +1252,7 @@ Func RefreshTimesheet($week_start_date)
 
 					if Number($worklog_id2) = Number($worklog_id) Then
 
+						$worklog_found = True
 						Local $arr = StringRegExp($worklog_comment, "done=(\d+)%", 1)
 
 						if @error = 0 Then
@@ -1272,11 +1276,31 @@ Func RefreshTimesheet($week_start_date)
 							EndIf
 
 							$ticket_time_spent_seconds = $ticket_time_spent_seconds + $worklog_time_spent_seconds3
-
 						EndIf
 
+						ExitLoop
 					EndIf
 				Next
+
+				; if a newly added worklog in this refresh
+
+				if $worklog_found = False Then
+
+					Local $arr = StringRegExp($worklog_comment, "done=(\d+)%", 1)
+
+					if @error = 0 Then
+
+						Local $done_pcnt = $arr[0]
+
+						; calculate how many seconds of work has been done overall
+						$ticket_done_seconds = $original_estimate * ($done_pcnt / 100)
+
+						; substract the number of seconds already spent to arrive at the time that needs to be spent in this work log (to match the percent done above)
+						Local $worklog_time_spent_seconds3 = $ticket_done_seconds - $ticket_time_spent_seconds
+
+						$ticket_time_spent_seconds = $ticket_time_spent_seconds + $worklog_time_spent_seconds3
+					EndIf
+				EndIf
 
 			Next
 
