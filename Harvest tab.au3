@@ -874,11 +874,9 @@ Func RefreshTimesheet($week_start_date)
 	Local $this_sunday_date = _DateAdd('d', 6, $week_start_date)
 
 
-	GUICtrlStatusInput_SetText($status_input, "Please Wait. Getting your Harvest times ...")
-	$iPID = Run('curl -k https://api.harvestapp.com/v2/time_entries?from=' & StringReplace($week_start_date, "/", "-") & '&to=' & StringReplace($this_sunday_date, "/", "-") & ' -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-	ProcessWaitClose($iPID)
-	Local $json = StdoutRead($iPID)
-	GUICtrlStatusInput_SetText($status_input, "")
+	UpdateStatusAndLog($status_input, "Please Wait. Getting your Harvest times ...")
+	$json = cURL('curl -k https://api.harvestapp.com/v2/time_entries?from=' & StringReplace($week_start_date, "/", "-") & '&to=' & StringReplace($this_sunday_date, "/", "-") & ' -H "Authorization: Bearer ' & GUICtrlRead($harvest_access_token_input) & '" -H "Harvest-Account-Id: ' & GUICtrlRead($harvest_account_id_input) & '" -H "User-Agent: MyApp (yourname@example.com)"')
+	UpdateStatusAndLog($status_input, "")
 
 	Local $decoded_json = Json_Decode($json)
 	_GUICtrlListView_BeginUpdate($timesheet_listview)
@@ -1004,11 +1002,9 @@ Func RefreshTimesheet($week_start_date)
 
 			; get the estimate, time spent and worklogs of the jira ticket
 
-			GUICtrlStatusInput_SetText($status_input, "Please Wait. Getting Jira ticket " & $jira_ticket_in_timesheet[$i] & " ...")
-			$iPID = Run('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_ticket_in_timesheet[$i] & ' -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-			ProcessWaitClose($iPID)
-			Local $json = StdoutRead($iPID)
-			GUICtrlStatusInput_SetText($status_input, "")
+			UpdateStatusAndLog($status_input, "Please Wait. Getting Jira ticket " & $jira_ticket_in_timesheet[$i] & " ...")
+			$json = cURL('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_ticket_in_timesheet[$i] & ' -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json"')
+			UpdateStatusAndLog($status_input, "")
 			$jira_ticket_decoded_json[$i] = Json_Decode($json)
 
 			$jira_ticket_worklogs[$i] = ""
@@ -1057,6 +1053,8 @@ Func RefreshTimesheet($week_start_date)
 				Local $jira_key = $arr[0]
 				Local $new_estimate = $arr[1]
 
+				UpdateLog("Found Harvest Note '" & $jira_key & " est=" & $new_estimate & "' for date '" & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & "' (" & $selected_timesheet_date & ")")
+
 				; check if this estimate update is already a worklog in the Jira ticket
 
 				Local $worklog_found = False
@@ -1091,17 +1089,15 @@ Func RefreshTimesheet($week_start_date)
 
 						; update the original estimate of the jira ticket
 
-						GUICtrlStatusInput_SetText($status_input, "Please Wait. Updating the estimate to " & $new_estimate & " for ticket " & $jira_key & " ...")
-						$iPID = Run('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_key & ' -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X PUT -d "{\"update\": {\"timetracking\": [{\"edit\": {\"originalEstimate\": \"' & $new_estimate & '\"}}]}}"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-						ProcessWaitClose($iPID)
-						GUICtrlStatusInput_SetText($status_input, "")
+						UpdateStatusAndLog($status_input, "Please Wait. Updating the estimate to " & $new_estimate & " for ticket " & $jira_key & " ...")
+						$json = cURL('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_key & ' -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X PUT -d "{\"update\": {\"timetracking\": [{\"edit\": {\"originalEstimate\": \"' & $new_estimate & '\"}}]}}"')
+						UpdateStatusAndLog($status_input, "")
 
 						; add a work log to the jira ticket to indicate the original estimate was updated
 
-						GUICtrlStatusInput_SetText($status_input, "Please Wait. Adding a worklog to ticket " & $jira_key & " to indicate the estimate was updated ...")
-						$iPID = Run('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/QA-3285/worklog -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X POST -d "{\"timeSpentSeconds\": 0, \"comment\": {\"type\": \"doc\", \"version\": 1, \"content\": [{\"type\": \"paragraph\", \"content\": [{\"text\": \"original estimate updated to ' & $new_estimate & '\", \"type\": \"text\"}]}]}, \"started\": \"' & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & 'T00:00:00.000+0000\"}"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-						ProcessWaitClose($iPID)
-						GUICtrlStatusInput_SetText($status_input, "")
+						UpdateStatusAndLog($status_input, "Please Wait. Adding a worklog to ticket " & $jira_key & " to indicate the estimate was updated ...")
+						$json = cURL('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/QA-3285/worklog -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X POST -d "{\"timeSpentSeconds\": 0, \"comment\": {\"type\": \"doc\", \"version\": 1, \"content\": [{\"type\": \"paragraph\", \"content\": [{\"text\": \"original estimate updated to ' & $new_estimate & '\", \"type\": \"text\"}]}]}, \"started\": \"' & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & 'T00:00:00.000+0000\"}"')
+						UpdateStatusAndLog($status_input, "")
 
 					EndIf
 
@@ -1115,6 +1111,7 @@ Func RefreshTimesheet($week_start_date)
 
 				Local $jira_key = $arr[0]
 				Local $done_pcnt = $arr[1]
+				UpdateLog("Found Harvest Note '" & $jira_key & " done=" & $done_pcnt & "%' for date '" & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & "' (" & $selected_timesheet_date & ")")
 
 				; check if this worklog is already in the Jira ticket
 
@@ -1134,6 +1131,8 @@ Func RefreshTimesheet($week_start_date)
 
 							$worklog_found = True
 
+							UpdateLog("Found existing worklog with this note and for this date in the Jira ticket (" & $jira_key &")")
+
 							; clear the worklog started so we know later not to process this worklog again
 							;Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $worklog_index & '].id', "")
 							;Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $worklog_index & '].comment.content[0].content[0].text', "")
@@ -1147,8 +1146,12 @@ Func RefreshTimesheet($week_start_date)
 
 					if $worklog_found = False Then
 
+						UpdateLog("Did not find a worklog with this note and for this date in the Jira ticket (" & $jira_key &"). A new worklog for this Harvest time entry should be created.")
+
 						Local $ticket_time_spent_seconds = Json_Get($jira_ticket_decoded_json[$jira_ticket_index], '.fields.timetracking.timeSpentSeconds')
 						Local $original_estimate = Json_Get($jira_ticket_decoded_json[$jira_ticket_index], '.fields.timetracking.originalEstimate')
+
+						UpdateLog("    The total time spent on this Jira ticket currently is " & $ticket_time_spent_seconds & " seconds (" & ($ticket_time_spent_seconds / 3600) & " hours)")
 
 						; remove all time spent after the date time of this worklog, to arrive at a time spent for the date time of the worklog
 
@@ -1158,11 +1161,17 @@ Func RefreshTimesheet($week_start_date)
 
 							Local $worklog_started = StringLeft(Json_Get($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $worklog_index & '].started'), 10)
 							Local $worklog_time_spent_seconds = Json_Get($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $worklog_index & '].timeSpentSeconds')
+							Local $worklog_comment = Json_Get($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $worklog_index & '].comment.content[0].content[0].text')
 
-							if _DateDiff("D", @YEAR & "/" & _ConvertMonth($selected_timesheet_date_part2[2]) & "/" & $selected_timesheet_date_part2[1], StringReplace($worklog_started, "-", "/")) <= 0 then ExitLoop
+;							if _DateDiff("D", @YEAR & "/" & _ConvertMonth($selected_timesheet_date_part2[2]) & "/" & $selected_timesheet_date_part2[1], StringReplace($worklog_started, "-", "/")) <= 0 then ExitLoop
+							if StringLen($worklog_started) > 0 and _DateDiff("D", @YEAR & "/" & _ConvertMonth($selected_timesheet_date_part2[2]) & "/" & $selected_timesheet_date_part2[1], StringReplace($worklog_started, "-", "/")) >= 0 then
 
-							$ticket_time_spent_seconds = $ticket_time_spent_seconds - $worklog_time_spent_seconds
+								$ticket_time_spent_seconds = $ticket_time_spent_seconds - $worklog_time_spent_seconds
+								UpdateLog("    The total time spent on this Jira ticket after substracting " & $worklog_time_spent_seconds & " seconds (" & ($worklog_time_spent_seconds / 3600) & " hours) from the worklog '" & $worklog_comment & "' dated '" & $worklog_started & "' is " & $ticket_time_spent_seconds & " seconds")
+							EndIf
 						Next
+
+						UpdateLog("    The time spent on this Jira ticket (" & $jira_key &") up to this date of '" & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & "' is " & $ticket_time_spent_seconds & " seconds (" & ($ticket_time_spent_seconds / 3600) & " hours)")
 
 						; convert Jira week-day-hour estimate back to seconds
 						$original_estimate = JiraWeekDayHourToSeconds($original_estimate)
@@ -1173,14 +1182,16 @@ Func RefreshTimesheet($week_start_date)
 						; substract the number of seconds already spent to arrive at the time that needs to be spent in this work log (to match the percent done above)
 						Local $worklog_time_spent_seconds = $ticket_done_seconds - $ticket_time_spent_seconds
 
+						UpdateLog("    The time that needs to be spent on this worklog is " & $worklog_time_spent_seconds & " seconds (" & ($worklog_time_spent_seconds / 3600) & " hours), calculated as ($original_estimate * ($done_pcnt / 100)) - $ticket_time_spent_seconds, specifically (" & $original_estimate & " * (" & $done_pcnt & " / 100)) - " & $ticket_time_spent_seconds)
+
 						if $worklog_time_spent_seconds > 0 Then
 
 							; add work log for jira ticket
 
-							GUICtrlStatusInput_SetText($status_input, "Please Wait. Adding a new worklog to Jira ticket " & $jira_key & " ...")
-							$iPID = Run('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_key & '/worklog -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X POST -d "{\"timeSpentSeconds\": ' & $worklog_time_spent_seconds & ', \"comment\": {\"type\": \"doc\", \"version\": 1, \"content\": [{\"type\": \"paragraph\", \"content\": [{\"text\": \"' & $note & '\", \"type\": \"text\"}]}]}, \"started\": \"' & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & 'T00:00:00.000+0000\"}"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-							ProcessWaitClose($iPID)
-							GUICtrlStatusInput_SetText($status_input, "")
+							UpdateStatusAndLog($status_input, "Please Wait. Adding new worklog '" & $note & "' to Jira ticket " & $jira_key & " ...")
+							$json = cURL('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_key & '/worklog -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X POST -d "{\"timeSpentSeconds\": ' & $worklog_time_spent_seconds & ', \"comment\": {\"type\": \"doc\", \"version\": 1, \"content\": [{\"type\": \"paragraph\", \"content\": [{\"text\": \"' & $note & '\", \"type\": \"text\"}]}]}, \"started\": \"' & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & 'T00:00:00.000+0000\"}"')
+							UpdateStatusAndLog($status_input, "")
+
 							Local $json = StdoutRead($iPID)
 							Local $decoded_json = Json_Decode($json)
 
@@ -1213,10 +1224,22 @@ Func RefreshTimesheet($week_start_date)
 
 					; delete the worklog
 
-					GUICtrlStatusInput_SetText($status_input, "Please Wait. Deleting Jira worklog " & $worklog_id & " for ticket " & $jira_ticket_in_timesheet[$i] & " ...")
-					$iPID = Run('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_ticket_in_timesheet[$i] & '/worklog/' & $worklog_id & ' -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -X DELETE', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-					ProcessWaitClose($iPID)
-					GUICtrlStatusInput_SetText($status_input, "")
+					UpdateStatusAndLog($status_input, "Please Wait. Deleting Jira worklog " & $worklog_id & " for ticket " & $jira_ticket_in_timesheet[$i] & " ...")
+					$json = cURL('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_ticket_in_timesheet[$i] & '/worklog/' & $worklog_id & ' -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -X DELETE')
+					UpdateStatusAndLog($status_input, "")
+
+					$worklog_started = StringLeft($worklog_started, 10)
+					Local $worklog_comment = Json_Get($jira_ticket_decoded_json[$i], '.fields.worklog.worklogs[' & $worklog_index & '].comment.content[0].content[0].text')
+					Local $worklog_time_spent_seconds = Json_Get($jira_ticket_decoded_json[$i], '.fields.worklog.worklogs[' & $worklog_index & '].timeSpentSeconds')
+
+
+;					if StringInStr($jira_ticket_worklogs[$i], $worklog_started & chr(29) & $worklog_comment & chr(29) & $worklog_id & chr(29) & $worklog_time_spent_seconds) > 0 Then
+
+						$jira_ticket_worklogs[$i] = StringReplace($jira_ticket_worklogs[$i], $worklog_started & chr(29) & $worklog_comment & chr(29) & $worklog_id & chr(29) & $worklog_time_spent_seconds & chr(30), "")
+						$jira_ticket_worklogs[$i] = StringReplace($jira_ticket_worklogs[$i], chr(30) & $worklog_started & chr(29) & $worklog_comment & chr(29) & $worklog_id & chr(29) & $worklog_time_spent_seconds, "")
+						$jira_ticket_worklogs[$i] = StringReplace($jira_ticket_worklogs[$i], $worklog_started & chr(29) & $worklog_comment & chr(29) & $worklog_id & chr(29) & $worklog_time_spent_seconds, "")
+;					EndIf
+
 				EndIf
 			Next
 		Next
@@ -1250,7 +1273,7 @@ Func RefreshTimesheet($week_start_date)
 					Local $worklog_id2 = Json_Get($jira_ticket_decoded_json[$i], '.fields.worklog.worklogs[' & $worklog_index & '].id')
 					Local $worklog_time_spent_seconds2 = Json_Get($jira_ticket_decoded_json[$i], '.fields.worklog.worklogs[' & $worklog_index & '].timeSpentSeconds')
 
-					if Number($worklog_id2) = Number($worklog_id) Then
+					if StringLen($worklog_id2) > 0 and StringLen($worklog_id) > 0 and Number($worklog_id2) = Number($worklog_id) Then
 
 						$worklog_found = True
 						Local $arr = StringRegExp($worklog_comment, "done=(\d+)%", 1)
@@ -1265,14 +1288,15 @@ Func RefreshTimesheet($week_start_date)
 							; substract the number of seconds already spent to arrive at the time that needs to be spent in this work log (to match the percent done above)
 							Local $worklog_time_spent_seconds3 = $ticket_done_seconds - $ticket_time_spent_seconds
 
+							UpdateLog("    The time that should be spent on worklog '" & $worklog_comment & "' dated '" & $worklog_started & "' is " & $worklog_time_spent_seconds3 & " seconds (" & ($worklog_time_spent_seconds3 / 3600) & " hours), calculated as ($original_estimate * ($done_pcnt / 100)) - $ticket_time_spent_seconds, specifically (" & $original_estimate & " * (" & $done_pcnt & " / 100)) - " & $ticket_time_spent_seconds)
+
 							if Number($worklog_time_spent_seconds3) <> Number($worklog_time_spent_seconds2) Then
 
 								; update the time spent for this worklog
 
-								GUICtrlStatusInput_SetText($status_input, "Please Wait. Updating time spent for worklog id " & $worklog_id & " in Jira ticket " & $jira_ticket_in_timesheet[$i] & " ...")
-								$iPID = Run('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_ticket_in_timesheet[$i] & '/worklog/' & $worklog_id & ' -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X PUT -d "{\"timeSpentSeconds\": ' & $worklog_time_spent_seconds3 & '}"', @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
-								ProcessWaitClose($iPID)
-								GUICtrlStatusInput_SetText($status_input, "")
+								UpdateStatusAndLog($status_input, "Please Wait. Updating time spent for worklog id " & $worklog_id & " in Jira ticket " & $jira_ticket_in_timesheet[$i] & " to " & $worklog_time_spent_seconds3 & " seconds (" & ($worklog_time_spent_seconds3 / 3600) & " hours) ...")
+								$json = cURL('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_ticket_in_timesheet[$i] & '/worklog/' & $worklog_id & ' -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X PUT -d "{\"timeSpentSeconds\": ' & $worklog_time_spent_seconds3 & '}"')
+								UpdateStatusAndLog($status_input, "")
 							EndIf
 
 							$ticket_time_spent_seconds = $ticket_time_spent_seconds + $worklog_time_spent_seconds3
@@ -1297,6 +1321,8 @@ Func RefreshTimesheet($week_start_date)
 
 						; substract the number of seconds already spent to arrive at the time that needs to be spent in this work log (to match the percent done above)
 						Local $worklog_time_spent_seconds3 = $ticket_done_seconds - $ticket_time_spent_seconds
+
+						UpdateLog("    The time that should be spent on worklog '" & $worklog_comment & "' dated '" & $worklog_started & "' is " & $worklog_time_spent_seconds3 & " seconds (" & ($worklog_time_spent_seconds3 / 3600) & " hours), calculated as ($original_estimate * ($done_pcnt / 100)) - $ticket_time_spent_seconds, specifically (" & $original_estimate & " * (" & $done_pcnt & " / 100)) - " & $ticket_time_spent_seconds)
 
 						$ticket_time_spent_seconds = $ticket_time_spent_seconds + $worklog_time_spent_seconds3
 					EndIf

@@ -26,6 +26,9 @@ Global $ini_filename = $app_data_dir & "\" & $app_name & ".ini"
 Global $log_filename = $app_data_dir & "\" & $app_name & ".log"
 
 
+if FileExists($log_filename) = True Then FileDelete($log_filename)
+
+
 Global $local_path = "F:\RetroPie"
 Global $sDrive = "", $sDir = "", $sFileName = "", $sExtension = ""
 Global $sDrive1 = "", $sDir1 = "", $sFileName1 = "", $sExtension1 = ""
@@ -33,7 +36,9 @@ Global $sDrive2 = "", $sDir2 = "", $sFileName2 = "", $sExtension2 = ""
 Global $alphanumeric_arr[36] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
 Global $iStyle = BitOR($TVS_EDITLABELS, $TVS_HASBUTTONS, $TVS_HASLINES, $TVS_LINESATROOT, $TVS_DISABLEDRAGDROP, $TVS_SHOWSELALWAYS, $TVS_CHECKBOXES)
 Global $current_gui
+Global $cmd = ""
 Global $result = 1
+Global $json = ""
 Global $iPID
 Global $metronome_token
 Global $timesheet_project_id_dict = ObjCreate("Scripting.Dictionary")
@@ -1030,3 +1035,30 @@ Func JiraWeekDayHourToSeconds($jira_week_day_hour_time)
 
 	Return $seconds
 EndFunc
+
+Func UpdateLog($text)
+
+	_FileWriteLog($log_filename, $text)
+
+EndFunc
+
+
+Func UpdateStatusAndLog($status_input_ctrl, $text)
+
+	GUICtrlStatusInput_SetText($status_input_ctrl, $text)
+
+	if StringLen($text) > 0 Then _FileWriteLog($log_filename, $text)
+EndFunc
+
+Func cURL($cmd)
+
+	_FileWriteLog($log_filename, "Executing cURL cmd = " & $cmd)
+
+	$iPID = Run($cmd, @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+	ProcessWaitClose($iPID)
+	Local $json = StdoutRead($iPID)
+
+	Return $json
+
+EndFunc
+
