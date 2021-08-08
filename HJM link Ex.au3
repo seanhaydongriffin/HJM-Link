@@ -957,6 +957,30 @@ Func GetLastMondayDate($format = "")
 
 EndFunc
 
+; $week_starting = the date of the monday that starts the week
+; $date = the date to find within the week above
+
+Func IsDateWithinWeek($week_starting_date, $date)
+
+	Local $week_starting_part = StringSplit($week_starting_date, "/", 3)
+
+	if _DateDiff("D", $week_starting_part[2] & "/" & $week_starting_part[1] & "/" & $week_starting_part[0], StringReplace($date, "-", "/")) >= 0 And _DateDiff("D", _DateAdd("D", 7, $week_starting_part[2] & "/" & $week_starting_part[1] & "/" & $week_starting_part[0]), StringReplace($date, "-", "/")) < 0 Then return True
+
+	Return False
+
+EndFunc
+
+Func IsDateWithinCurrentTimesheetWeek($date)
+
+	Local $current_timesheet_week_starting_part = StringSplit(GUICtrlRead($timesheet_week_combo), "/", 3)
+
+	if _DateDiff("D", $current_timesheet_week_starting_part[2] & "/" & $current_timesheet_week_starting_part[1] & "/" & $current_timesheet_week_starting_part[0], StringReplace($date, "-", "/")) >= 0 Then return True
+
+	Return False
+
+EndFunc
+
+
 Func _URIEncode($sData)
     ; Prog@ndy
     Local $aData = StringSplit(BinaryToString(StringToBinary($sData,4),1),"")

@@ -964,10 +964,9 @@ Func RefreshTimesheet($week_start_date)
 
 		; process estimate updates to Jira tickets
 
+		; $week_start_date = the date of the monday at the start of the current week (ie. the week of the date now, not the selected timesheet week)
+
 		Local $timesheet_listview_item_index = GUICtrlListView_GetIndexOrdered($timesheet_listview)
-		Local $week_starting = GUICtrlRead($timesheet_week_combo)
-		Local $week_starting_part = StringSplit($week_starting, "/", 3)
-		Local $monday_millseconds = (_DateDiff("s","1970/01/01 00:00:00", $week_starting_part[2] & "/" & $week_starting_part[1] & "/" & $week_starting_part[0] & " 00:00:00") * 1000) - 1000
 
 		; get an array of all the jira tickets mentioned in the timesheet and remove all worklogs for this current user for this timesheet period
 
@@ -1030,7 +1029,7 @@ Func RefreshTimesheet($week_start_date)
 
 				$jira_ticket_worklogs[$i] = $jira_ticket_worklogs[$i] & $worklog_started2 & chr(29) & $worklog_comment & chr(29) & $worklog_id & chr(29) & $worklog_time_spent_seconds
 
-				if StringLen($worklog_started2) > 0 and _DateDiff("D", $week_starting_part[2] & "/" & $week_starting_part[1] & "/" & $week_starting_part[0], StringReplace($worklog_started2, "-", "/")) >= 0 then
+				if StringLen($worklog_started2) > 0 and IsDateWithinWeek($week_start_date, $worklog_started2) then
 
 					$jira_ticket_time_spent_at_week_start[$i] = $jira_ticket_time_spent_at_week_start[$i] - $worklog_time_spent_seconds
 				EndIf
@@ -1146,7 +1145,7 @@ Func RefreshTimesheet($week_start_date)
 						Local $time_spent_seconds_to_current_time_entry = $jira_ticket_time_spent_at_week_start[$jira_ticket_index]
 						Local $original_estimate = Json_Get($jira_ticket_decoded_json[$jira_ticket_index], '.fields.timetracking.originalEstimate')
 
-						UpdateLog("    The total time spent on this Jira ticket at start of week (" & $week_starting & ") was " & $jira_ticket_time_spent_at_week_start[$jira_ticket_index] & " seconds (" & ($jira_ticket_time_spent_at_week_start[$jira_ticket_index] / 3600) & " hours)")
+						UpdateLog("    The total time spent on this Jira ticket at start of week (" & $week_start_date & ") was " & $jira_ticket_time_spent_at_week_start[$jira_ticket_index] & " seconds (" & ($jira_ticket_time_spent_at_week_start[$jira_ticket_index] / 3600) & " hours)")
 
 						; find the time spent for the date time of the worklog by adding all time spent after the start of week to the date time of this worklog
 
@@ -1159,7 +1158,7 @@ Func RefreshTimesheet($week_start_date)
 							Local $worklog_comment = Json_Get($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $worklog_index & '].comment.content[0].content[0].text')
 							Local $worklog_in_harvest = Json_Get($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $worklog_index & '].in_harvest')
 
-							if StringLen($worklog_started) > 0 and StringCompare($worklog_in_harvest, "true") = 0 And _DateDiff("D", $week_starting_part[2] & "/" & $week_starting_part[1] & "/" & $week_starting_part[0], StringReplace($worklog_started, "-", "/")) >= 0 And _DateDiff("D", @YEAR & "/" & _ConvertMonth($selected_timesheet_date_part2[2]) & "/" & $selected_timesheet_date_part2[1], StringReplace($worklog_started, "-", "/")) < 0 then
+							if StringLen($worklog_started) > 0 and IsDateWithinWeek($week_start_date, $worklog_started) then
 
 								$time_spent_seconds_to_current_time_entry = $time_spent_seconds_to_current_time_entry + $worklog_time_spent_seconds
 								UpdateLog("    The total time spent on this Jira ticket after adding " & $worklog_time_spent_seconds & " seconds (" & ($worklog_time_spent_seconds / 3600) & " hours) from the worklog '" & $worklog_comment & "' dated '" & $worklog_started & "' is " & $time_spent_seconds_to_current_time_entry & " seconds")
@@ -1186,10 +1185,14 @@ Func RefreshTimesheet($week_start_date)
 							UpdateStatusAndLog($status_input, "Please Wait. Adding new worklog '" & $note & "' to Jira ticket " & $jira_key & " ...")
 							$json = cURL('curl -k https://janisoncls.atlassian.net/rest/api/3/issue/' & $jira_key & '/worklog -u ' & GUICtrlRead($jira_username_input) & ':' & GUICtrlRead($jira_api_token_input) & ' -H "Accept: application/json" -H "Content-Type: application/json" -X POST -d "{\"timeSpentSeconds\": ' & $worklog_time_spent_seconds2 & ', \"comment\": {\"type\": \"doc\", \"version\": 1, \"content\": [{\"type\": \"paragraph\", \"content\": [{\"text\": \"' & $note & '\", \"type\": \"text\"}]}]}, \"started\": \"' & @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & 'T00:00:00.000+0000\"}"')
 							UpdateStatusAndLog($status_input, "")
-
 							Local $json = StdoutRead($iPID)
 							Local $decoded_json = Json_Decode($json)
 
+							Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.total', $total_worklogs + 1)
+							Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $total_worklogs & '].started', @YEAR & "-" & _ConvertMonth($selected_timesheet_date_part2[2]) & "-" & $selected_timesheet_date_part2[1] & "T00:00:00.000+0000")
+							Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $total_worklogs & '].timeSpentSeconds', $worklog_time_spent_seconds2)
+							Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $total_worklogs & '].comment.content[0].content[0].text', $note)
+							Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.worklog.worklogs[' & $total_worklogs & '].in_harvest', "true")
 							Json_Put($jira_ticket_decoded_json[$jira_ticket_index], '.fields.timetracking.timeSpentSeconds', Number($ticket_time_spent_seconds) + $worklog_time_spent_seconds2)
 
 							if StringLen($jira_ticket_worklogs[$jira_ticket_index]) > 0 Then $jira_ticket_worklogs[$jira_ticket_index] = $jira_ticket_worklogs[$jira_ticket_index] & chr(30)
@@ -1214,7 +1217,7 @@ Func RefreshTimesheet($week_start_date)
 				Local $worklog_started = Json_Get($jira_ticket_decoded_json[$i], '.fields.worklog.worklogs[' & $worklog_index & '].started')
 				Local $worklog_in_harvest = Json_Get($jira_ticket_decoded_json[$i], '.fields.worklog.worklogs[' & $worklog_index & '].in_harvest')
 
-				if StringCompare($worklog_in_harvest, "true") <> 0 Then
+				if StringCompare($worklog_in_harvest, "true") <> 0 And IsDateWithinCurrentTimesheetWeek($worklog_started) Then
 
 					; delete the worklog
 
